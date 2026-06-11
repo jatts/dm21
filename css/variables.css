@@ -1,0 +1,78 @@
+        /* ═══════════════════════════════════════════════
+           CSS VARIABLES — Design Tokens
+           Safe Area Support for Android WebView (Kodular)
+           ═══════════════════════════════════════════════ */
+        :root {
+            --bg:        #0a0d14;
+            --surface:   #111520;
+            --card:      #181d2e;
+            --border:    rgba(255,255,255,0.07);
+            --accent:    #00e5ff;
+            --accent2:   #7c4dff;
+            --success:   #00e676;
+            --warn:      #ff9100;
+            --danger:    #ff1744;
+            --text:      #e8eaf6;
+            --muted:     #616880;
+            --bar-h:     58px;
+            --nav-h:     62px;
+            --radius:    16px;
+            --font-mono: 'JetBrains Mono', monospace;
+            --font-main: 'Sora', sans-serif;
+            --shadow:    0 2px 8px rgba(0,0,0,0.3);
+
+            /* ── ANDROID SAFE AREA INSETS ──
+               These fill automatically via env() on devices with:
+               - Gesture navigation bar (Android 10+)
+               - 3-button nav bar
+               - Notch / punch-hole cameras
+               - Rounded corners
+               Fallback = 0px on devices/browsers that don't support env()
+            */
+            --safe-top:    env(safe-area-inset-top,    0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --safe-left:   env(safe-area-inset-left,   0px);
+            --safe-right:  env(safe-area-inset-right,  0px);
+        }
+
+        /* ── LIGHT MODE ── */
+        html.light {
+            --bg:        #f0f2f8;
+            --surface:   #ffffff;
+            --card:      #ffffff;
+            --border:    rgba(0,0,0,0.09);
+            --text:      #1a1d2e;
+            --muted:     #8890aa;
+            --shadow:    0 2px 12px rgba(0,0,0,0.10);
+        }
+        html.light #gamebar-wrap {
+            background: linear-gradient(90deg,#1a1040 0%,#221560 50%,#1a1040 100%);
+        }
+        html.light .page { background: var(--bg); }
+        html.light .scan-input { background: #fff; color: var(--text); }
+        html.light .history-list .h-item { box-shadow: var(--shadow); }
+        html.light #loading { background: var(--bg); }
+        html.light #toast   { background: var(--surface); color: var(--text); }
+
+        /* smooth theme transition */
+        body, #gamebar-wrap, #bottom-nav, .page, .card, .rcard,
+        .h-item, .stat-card, .setting-row, .level-progress-wrap,
+        .stats-game-banner, .scan-input, .search-input {
+            transition: background-color .25s, border-color .25s, color .25s;
+        }
+
+        /* ── GLOBAL RESET ── */
+        *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+        body {
+            font-family: var(--font-main);
+            background: var(--bg);
+            color: var(--text);
+            height: 100dvh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+
+            /* Push content away from status bar on notch phones */
+            padding-top: var(--safe-top);
+        }

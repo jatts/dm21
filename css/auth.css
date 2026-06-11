@@ -1,0 +1,95 @@
+        /* LOGIN OVERLAY */
+        #loginOverlay {
+            display: none;
+            position: fixed; inset: 0; z-index: 99990;
+            background: var(--bg);
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 28px 20px;
+        }
+        #loginOverlay.show { display: flex; }
+        .login-card {
+            width: 100%; max-width: 340px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 28px 22px;
+        }
+        .login-logo {
+            text-align: center; margin-bottom: 6px;
+            font-family: var(--font-mono); font-size: 19px; font-weight: 700;
+            background: linear-gradient(135deg,var(--accent),var(--accent2));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .login-sub { text-align: center; font-size: 12px; color: var(--muted); margin-bottom: 22px; }
+        .login-field { position: relative; margin-bottom: 11px; }
+        .login-field i { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 13px; pointer-events: none; }
+        .login-input {
+            width: 100%; background: var(--card);
+            border: 1.5px solid var(--border); border-radius: 11px;
+            padding: 11px 14px 11px 38px;
+            font-size: 14px; color: var(--text); outline: none;
+            font-family: var(--font-main);
+            transition: border-color .2s;
+        }
+        .login-input:focus { border-color: var(--accent2); }
+        .login-input::placeholder { color: var(--muted); }
+        .login-btn {
+            width: 100%; margin-top: 6px;
+            background: linear-gradient(135deg,var(--accent2),var(--accent));
+            color: #fff; border: none; border-radius: 11px;
+            padding: 13px; font-size: 15px; font-weight: 700; cursor: pointer;
+            font-family: var(--font-main);
+        }
+        .login-btn:active { opacity: .85; }
+        .login-btn:disabled { opacity: .5; }
+        .login-err { font-size: 12px; color: var(--danger); text-align: center; margin-top: 10px; min-height: 16px; }
+        .login-spin {
+            display: inline-block; width: 14px; height: 14px;
+            border: 2px solid rgba(255,255,255,.3); border-top-color:#fff;
+            border-radius: 50%; animation: spin .6s linear infinite;
+            vertical-align: middle; margin-right: 5px;
+        }
+        /* LOGIN/SIGNUP TABS */
+        .auth-tabs {
+            display: flex; gap: 0; margin-bottom: 20px;
+            background: var(--card); border-radius: 10px; padding: 3px;
+            border: 1px solid var(--border);
+        }
+        .auth-tab {
+            flex: 1; padding: 8px; border: none; border-radius: 8px;
+            font-size: 13px; font-weight: 700; cursor: pointer;
+            background: transparent; color: var(--muted);
+            font-family: var(--font-main); transition: all .2s;
+        }
+        .auth-tab.active {
+            background: linear-gradient(135deg,var(--accent2),var(--accent));
+            color: #fff;
+        }
+        /* SELECT DROPDOWN in login card */
+        .login-select {
+            width: 100%; background: var(--card);
+            border: 1.5px solid var(--border); border-radius: 11px;
+            padding: 11px 14px 11px 38px;
+            font-size: 14px; color: var(--text); outline: none;
+            font-family: var(--font-main);
+            appearance: none; -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23666' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+        }
+        .login-select:focus { border-color: var(--accent2); }
+        .login-select option { background: #1a1a2e; color: #fff; }
+        html.light .login-select option { background: #fff; color: #1a1a2e; }
+        /* Signup form scroll */
+        .signup-form { max-height: 65vh; overflow-y: auto; padding-right: 2px; }
+        .signup-form::-webkit-scrollbar { width: 3px; }
+        .signup-form::-webkit-scrollbar-thumb { background: var(--accent2); border-radius: 3px; }
+        /* Generated ID display */
+        .gen-id-box {
+            background: rgba(124,77,255,.1); border: 1px solid rgba(124,77,255,.3);
+            border-radius: 10px; padding: 10px 14px; text-align: center;
+            margin-bottom: 12px;
+        }
+        .gen-id-label { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.8px; margin-bottom:4px; }

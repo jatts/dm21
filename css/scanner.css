@@ -1,0 +1,377 @@
+        /* ───── SCAN PAGE ───── */
+        .scan-hero {
+            display:flex; flex-direction:column; align-items:center;
+            gap:0; padding:0 0 16px;
+        }
+        .scan-hero-title {
+            font-size:11px; font-weight:600; color:var(--muted);
+            text-transform:uppercase; letter-spacing:1.5px;
+        }
+        .scan-input-row { display:flex; gap:8px; width:100%; max-width:420px; }
+        .scan-input {
+            flex:1; background:var(--card); border:1px solid var(--border);
+            border-radius:12px; padding:12px 16px;
+            font-family:var(--font-mono); font-size:15px; color:var(--text);
+            outline:none; transition:border-color .2s, box-shadow .2s;
+        }
+        .scan-input:focus { border-color:var(--accent2); box-shadow:0 0 0 3px rgba(124,77,255,.15); }
+        .scan-input::placeholder { color:var(--muted); font-size:13px; }
+        .get-btn {
+            background:linear-gradient(135deg,var(--accent2),#5c35cc);
+            color:#fff; border:none; border-radius:12px;
+            padding:12px 20px; font-family:var(--font-main);
+            font-size:14px; font-weight:700; cursor:pointer;
+            transition:opacity .2s, transform .15s; white-space:nowrap;
+        }
+        .get-btn:active { transform:scale(.95); opacity:.85; }
+        .get-btn:disabled { opacity:.4; cursor:not-allowed; }
+
+        .camera-btn {
+            width:64px; height:64px; border-radius:50%;
+            background:var(--card); border:2px solid var(--accent2);
+            color:var(--accent2); font-size:26px;
+            display:flex; align-items:center; justify-content:center;
+            cursor:pointer; transition:all .2s; position:relative; overflow:hidden;
+        }
+        @keyframes spin { to { transform:rotate(360deg); } }
+        .camera-btn:active { transform:scale(.92); }
+        .camera-hint { font-size:11px; color:var(--muted); }
+
+        /* ───── INLINE SCANNER BOX ───── */
+        #scannerBox {
+            display: none;
+            width: 100%;
+            max-width: 420px;
+            margin: 0 auto 12px;
+            border-radius: 18px;
+            overflow: hidden;
+            position: relative;
+            background: #000;
+            border: 2px solid var(--accent2);
+            box-shadow: 0 0 24px rgba(124,77,255,.35);
+        }
+        #scannerBox.open { display: block; }
+
+        #cameraFeed {
+            width: 100%;
+            display: block;
+            height: 220px;
+            object-fit: cover;
+        }
+
+        /* scan line */
+        .scanner-line {
+            position: absolute;
+            left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent 0%, var(--accent) 30%, #fff 50%, var(--accent) 70%, transparent 100%);
+            box-shadow: 0 0 10px var(--accent), 0 0 4px #fff;
+            animation: scanLine 1.2s linear infinite;
+            pointer-events: none;
+            z-index: 5;
+        }
+        @keyframes scanLine {
+            0%   { top: 8px; }
+            100% { top: calc(100% - 8px); }
+        }
+
+        /* corner brackets */
+        .sf-tl, .sf-tr, .sf-bl, .sf-br {
+            position: absolute; width: 22px; height: 22px; z-index: 6;
+        }
+        .sf-tl { top:76px; left:8px;  border-top:2.5px solid var(--accent); border-left:2.5px solid var(--accent);  border-radius:4px 0 0 0; }
+        .sf-tr { top:76px; right:8px; border-top:2.5px solid var(--accent); border-right:2.5px solid var(--accent); border-radius:0 4px 0 0; }
+        .sf-bl { bottom:44px; left:8px;  border-bottom:2.5px solid var(--accent); border-left:2.5px solid var(--accent);  border-radius:0 0 0 4px; }
+        .sf-br { bottom:44px; right:8px; border-bottom:2.5px solid var(--accent); border-right:2.5px solid var(--accent); border-radius:0 0 4px 0; }
+
+        /* bottom toolbar inside box */
+        .scanner-toolbar {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            height: 42px;
+            background: rgba(0,0,0,.7);
+            backdrop-filter: blur(6px);
+            display: flex; align-items: center;
+            justify-content: space-between;
+            padding: 0 12px;
+            z-index: 10;
+        }
+        .scanner-status-inline {
+            font-size: 11px; font-weight: 600;
+            color: rgba(255,255,255,.8);
+            font-family: var(--font-mono);
+            flex: 1;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .scanner-toolbar-btns { display: flex; gap: 8px; align-items: center; }
+
+        .torch-btn {
+            width: 30px; height: 30px; border-radius: 50%;
+            border: none; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px;
+            background: rgba(255,255,255,.12);
+            color: rgba(255,255,255,.7);
+            transition: background .2s, color .2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .torch-btn.on {
+            background: rgba(255,214,0,.2);
+            color: #ffd600;
+            box-shadow: 0 0 8px rgba(255,214,0,.4);
+        }
+        .scanner-close-inline {
+            width: 30px; height: 30px; border-radius: 50%;
+            border: none; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px;
+            background: rgba(255,50,50,.2);
+            color: rgba(255,100,100,.9);
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* ───── FOCUS SLIDER ROW ───── */
+        .focus-row {
+            position: absolute;
+            top: 38px; left: 0; right: 0;
+            height: 34px;
+            background: rgba(0,0,0,.55);
+            backdrop-filter: blur(4px);
+            display: flex; align-items: center;
+            padding: 0 10px; gap: 8px;
+            z-index: 10;
+        }
+        .focus-label {
+            font-size: 10px; font-weight: 700;
+            color: rgba(255,255,255,.65);
+            font-family: var(--font-mono);
+            white-space: nowrap;
+        }
+        .focus-slider {
+            flex: 1;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 3px;
+            border-radius: 3px;
+            background: rgba(255,255,255,.15);
+            outline: none;
+            cursor: pointer;
+        }
+        .focus-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px; height: 16px;
+            border-radius: 50%;
+            background: var(--accent);
+            box-shadow: 0 0 6px rgba(0,229,255,.5);
+            cursor: pointer;
+        }
+        .focus-icon { font-size: 11px; color: rgba(255,255,255,.5); }
+        .focus-icon.near { margin-right: 2px; }
+        .focus-icon.far  { margin-left: 2px; }
+
+        /* ───── CONTINUOUS SCAN CONTROLS ───── */
+        .scanner-controls-row {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 38px;
+            background: rgba(0,0,0,.65);
+            backdrop-filter: blur(6px);
+            display: flex; align-items: center;
+            padding: 0 10px; gap: 8px;
+            z-index: 10;
+        }
+        .cont-toggle-wrap {
+            display: flex; align-items: center; gap: 6px; flex:1;
+        }
+        .cont-label {
+            font-size: 10px; font-weight: 700;
+            color: rgba(255,255,255,.75);
+            font-family: var(--font-mono);
+            white-space: nowrap;
+        }
+        .cont-active { color: var(--success) !important; }
+
+        .delay-select {
+            background: rgba(255,255,255,.1);
+            border: 1px solid rgba(255,255,255,.15);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 10px;
+            font-family: var(--font-mono);
+            padding: 2px 6px;
+            outline: none;
+            cursor: pointer;
+            height: 24px;
+        }
+        .delay-select option { background: #1a1a2e; color: #fff; }
+
+        /* ── Countdown overlay (continuous mode) ── */
+        #countdownOverlay {
+            display: none;
+            position: absolute; inset: 0;
+            background: rgba(0,0,0,0.92);
+            z-index: 30;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            border-radius: 16px;
+        }
+        #countdownOverlay.show { display: flex; }
+
+        .cd-number {
+            font-family: var(--font-mono);
+            font-size: 72px;
+            font-weight: 700;
+            line-height: 1;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: cdPulse 1s ease infinite;
+        }
+        @keyframes cdPulse {
+            0%,100% { transform: scale(1);   opacity: 1; }
+            50%      { transform: scale(1.08); opacity: .85; }
+        }
+        .cd-label {
+            font-size: 12px; font-weight: 600;
+            color: rgba(255,255,255,.5);
+            font-family: var(--font-mono);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .cd-bar-wrap {
+            width: 120px; height: 4px;
+            background: rgba(255,255,255,.1);
+            border-radius: 4px; overflow: hidden;
+        }
+        .cd-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent2), var(--accent));
+            border-radius: 4px;
+            transition: width 1s linear;
+        }
+        .cd-skip {
+            margin-top: 6px;
+            background: rgba(255,255,255,.08);
+            border: 1px solid rgba(255,255,255,.15);
+            border-radius: 20px;
+            padding: 6px 18px;
+            color: rgba(255,255,255,.7);
+            font-size: 11px; font-weight: 700;
+            cursor: pointer; border-width: 1px;
+            font-family: var(--font-main);
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* flash on detect */
+        @keyframes flashGreen { 0%,100%{opacity:0} 40%,60%{opacity:1} }
+        .scan-flash {
+            position: absolute; inset: 0; z-index: 20;
+            background: rgba(0,230,118,.3);
+            pointer-events: none;
+            animation: flashGreen .35s ease forwards;
+            border-radius: 16px;
+        }
+
+
+        /* ── EVENT BANNER ───────────────────────────────── */
+        .event-banner {
+            width: calc(100% + 28px);  /* extend beyond page padding */
+            height: 32px;
+            margin: -13px -14px 1px -14px;  /* 1px gap top, 1px gap bottom */
+            background: linear-gradient(90deg,
+                rgba(0,229,255,0.06) 0%,
+                rgba(124,77,255,0.10) 50%,
+                rgba(0,229,255,0.06) 100%);
+            border-top: 1px solid rgba(0,229,255,0.12);
+            border-bottom: 1px solid rgba(0,229,255,0.15);
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        /* left fade edge */
+        .event-banner::before,
+        .event-banner::after {
+            content: '';
+            position: absolute;
+            top: 0; bottom: 0;
+            width: 28px;
+            z-index: 2;
+            pointer-events: none;
+        }
+        .event-banner::before {
+            left: 0;
+            background: linear-gradient(90deg, var(--bg) 0%, transparent 100%);
+        }
+        .event-banner::after {
+            right: 0;
+            background: linear-gradient(270deg, var(--bg) 0%, transparent 100%);
+        }
+
+        .event-banner-track {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 0 10px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        /* pulsing dot indicator */
+        .event-banner-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent);
+            flex-shrink: 0;
+            animation: bannerDotPulse 2s ease-in-out infinite;
+            box-shadow: 0 0 6px var(--accent);
+            margin-left: 6px;
+        }
+        @keyframes bannerDotPulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50%       { opacity: 0.4; transform: scale(0.7); }
+        }
+
+        /* scrolling marquee container */
+        .event-banner-marquee {
+            display: flex;
+            gap: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            flex: 1;
+            mask-image: linear-gradient(90deg, transparent 0%, black 8%, black 92%, transparent 100%);
+            -webkit-mask-image: linear-gradient(90deg, transparent 0%, black 8%, black 92%, transparent 100%);
+        }
+
+        /* two identical spans for seamless loop */
+        .event-banner-marquee span {
+            display: inline-block;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text);
+            font-family: var(--font-main);
+            letter-spacing: 0.2px;
+            padding-right: 60px;
+            animation: bannerScroll 18s linear infinite;
+            will-change: transform;
+        }
+
+        @keyframes bannerScroll {
+            0%   { transform: translateX(0); }
+            100% { transform: translateX(-100%); }
+        }
+
+        /* light mode */
+        html.light .event-banner {
+            border-bottom-color: rgba(0,0,0,0.08);
+            background: linear-gradient(90deg,
+                rgba(124,77,255,0.05) 0%,
+                rgba(0,229,255,0.08) 50%,
+                rgba(124,77,255,0.05) 100%);
+        }
+        html.light .event-banner::before { background: linear-gradient(90deg, var(--bg) 0%, transparent 100%); }
+        html.light .event-banner::after  { background: linear-gradient(270deg, var(--bg) 0%, transparent 100%); }

@@ -1,0 +1,34 @@
+        /* ───── GAMEBAR ───── */
+        #gamebar-wrap {
+            height: var(--bar-h);
+            flex-shrink: 0;
+            background: linear-gradient(90deg, #0d1117 0%, #131929 50%, #0d1117 100%);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            gap: 10px;
+            z-index: 100;
+        }
+        .gb-block { display:flex; align-items:center; gap:7px; flex:1; }
+        .gb-block.center { justify-content:center; flex:0 0 auto; }
+        .gb-block.right  { justify-content:flex-end; }
+        .gb-icon { font-size:14px; }
+        .gb-icon.coin  { color:#ffd600; }
+        .gb-icon.level { color:var(--accent2); }
+        .gb-icon.scan  { color:var(--accent); }
+        .gb-texts { display:flex; flex-direction:column; gap:2px; }
+        .gb-val { font-family:var(--font-mono); font-size:13px; font-weight:700; line-height:1; }
+        .gb-label { font-size:9px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; }
+        .gb-bar { width:52px; height:4px; background:rgba(255,255,255,0.08); border-radius:4px; overflow:hidden; }
+        .gb-bar-fill { height:100%; border-radius:4px; transition:width .4s ease; }
+        .coin-fill { background:linear-gradient(90deg,#ffd600,#ff9100); }
+        .scan-fill { background:linear-gradient(90deg,var(--accent),var(--accent2)); }
+        .lvl-badge {
+            background:linear-gradient(135deg,var(--accent2),#3d1f99);
+            border-radius:20px; padding:4px 12px;
+            font-family:var(--font-mono); font-size:12px; font-weight:700; color:#fff; white-space:nowrap;
+        }
+        @keyframes coinPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.25)} }
+        .pulse { animation:coinPulse .4s ease; }
+

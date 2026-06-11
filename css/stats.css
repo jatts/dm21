@@ -1,0 +1,173 @@
+
+        /* ───── STATS PAGE GAME BANNER ───── */
+        .stats-game-banner {
+            display: flex; align-items: center;
+            background: linear-gradient(135deg, #1a1040, #0d1929);
+            border: 1px solid rgba(124,77,255,.3);
+            border-radius: var(--radius);
+            padding: 16px;
+            margin-bottom: 12px;
+            gap: 0;
+        }
+        .sgb-left, .sgb-right { flex: 0 0 auto; text-align: center; }
+        .sgb-mid { flex: 1; text-align: center; padding: 0 14px; }
+        .sgb-lvl {
+            font-family: var(--font-mono); font-size: 32px; font-weight: 700;
+            background: linear-gradient(135deg,var(--accent2),var(--accent));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            line-height: 1;
+        }
+        .sgb-lvl-label { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; margin-top: 3px; }
+        .sgb-coins { font-family: var(--font-mono); font-size: 20px; font-weight: 700; color: #ffd600; line-height: 1; }
+        .sgb-coins-label { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; margin: 3px 0 5px; }
+        .sgb-coinbar { height: 4px; background: rgba(255,255,255,.08); border-radius: 4px; overflow: hidden; }
+        .sgb-coinbar-fill { height: 100%; background: linear-gradient(90deg,#ffd600,#ff9100); border-radius: 4px; transition: width .4s; }
+        .sgb-scans {
+            font-family: var(--font-mono); font-size: 32px; font-weight: 700;
+            color: var(--accent); line-height: 1;
+        }
+        .sgb-scans-label { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; margin-top: 3px; }
+
+        /* ───── STATS PAGE ───── */
+        .stats-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px; }
+        .stat-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:16px; }
+        .stat-card-label { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.8px; margin-bottom:6px; }
+        .stat-card-val {
+            font-family:var(--font-mono); font-size:28px; font-weight:700;
+            background:linear-gradient(135deg,var(--accent),var(--accent2));
+            -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+        }
+        .level-progress-wrap { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:16px; margin-bottom:10px; }
+        .level-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+        .level-title { font-size:13px; font-weight:700; }
+        .level-badge-big {
+            background:linear-gradient(135deg,var(--accent2),var(--accent));
+            border-radius:20px; padding:4px 14px;
+            font-family:var(--font-mono); font-size:14px; font-weight:700;
+        }
+        .big-bar { height:8px; background:rgba(255,255,255,.08); border-radius:4px; overflow:hidden; }
+        .big-bar-fill { height:100%; background:linear-gradient(90deg,var(--accent2),var(--accent)); border-radius:4px; transition:width .5s ease; }
+        .level-sub { font-size:11px; color:var(--muted); margin-top:6px; }
+
+        /* ───── PLAYER PROFILE CARD ───── */
+        .player-profile-card {
+            display: flex; align-items: center; gap: 14px;
+            background: linear-gradient(135deg,#1a1040,#0d1929);
+            border: 1px solid rgba(124,77,255,.35);
+            border-radius: var(--radius); padding: 16px;
+            margin-bottom: 12px;
+        }
+        /* Force dark background in light mode too */
+        html.light .player-profile-card {
+            background: linear-gradient(135deg,#1a1040,#0d1929);
+            border-color: rgba(124,77,255,.5);
+        }
+        html.light .pp-name { color: #fff !important; }
+        html.light .pp-id   { color: var(--accent) !important; }
+        html.light .pp-joined { color: rgba(255,255,255,0.5) !important; }
+        .pp-avatar-wrap {
+            position: relative; flex-shrink: 0;
+            width: 64px; height: 64px;
+        }
+        .pp-avatar-placeholder {
+            width: 64px; height: 64px; border-radius: 50%;
+            background: linear-gradient(135deg,var(--accent2),var(--accent));
+            display: flex; align-items: center; justify-content: center;
+            font-size: 26px; color: #fff;
+        }
+        #ppAvatar {
+            width: 64px; height: 64px; border-radius: 50%;
+            object-fit: cover; border: 2px solid var(--accent2);
+        }
+        .pp-avatar-edit {
+            position: absolute; bottom: 0; right: -2px;
+            width: 22px; height: 22px; border-radius: 50%;
+            background: var(--accent2); border: 2px solid var(--bg);
+            color: #fff; font-size: 9px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .pp-info { flex: 1; min-width: 0; }
+        .pp-name-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+        .pp-name {
+            font-size: 16px; font-weight: 700; color: var(--text);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .pp-edit-btn {
+            width: 22px; height: 22px; border-radius: 50%;
+            background: rgba(255,255,255,.08); border: none;
+            color: var(--muted); font-size: 10px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .pp-id { font-family: var(--font-mono); font-size: 11px; color: var(--accent); margin-bottom: 2px; }
+        .pp-joined { font-size: 10px; color: var(--muted); }
+
+        /* ───── ACHIEVEMENTS ───── */
+        .achievements-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+        }
+        .ach-item {
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 12px; padding: 10px 6px;
+            display: flex; flex-direction: column; align-items: center; gap: 4px;
+            text-align: center; transition: border-color .2s;
+        }
+        .ach-item.unlocked { border-color: rgba(255,214,0,.4); }
+        .ach-icon { font-size: 22px; }
+        .ach-item.locked .ach-icon { filter: grayscale(1); opacity: .3; }
+        .ach-label { font-size: 9px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .3px; line-height: 1.2; }
+        .ach-item.unlocked .ach-label { color: #ffd600; }
+
+        /* ───── RANK CARD ───── */
+        .rank-card {
+            display: flex; align-items: center; gap: 12px;
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 14px 16px;
+        }
+        .rank-icon { font-size: 32px; flex-shrink: 0; }
+        .rank-info { flex: 1; }
+        .rank-title { font-size: 15px; font-weight: 700; margin-bottom: 2px; }
+        .rank-desc { font-size: 11px; color: var(--muted); }
+        .rank-badge {
+            background: linear-gradient(135deg,var(--accent2),var(--accent));
+            border-radius: 20px; padding: 4px 12px;
+            font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: #fff;
+            flex-shrink: 0;
+        }
+
+        /* ───── THEME TOGGLE ───── */
+        .theme-toggle-wrap {
+            display: flex; gap: 6px;
+        }
+        .theme-opt {
+            padding: 6px 12px; border-radius: 20px;
+            font-size: 12px; font-weight: 700;
+            cursor: pointer; border: 1.5px solid var(--border);
+            background: transparent; color: var(--muted);
+            font-family: var(--font-main);
+            transition: all .2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .theme-opt.active {
+            background: var(--accent2);
+            border-color: var(--accent2);
+            color: #fff;
+        }
+        .theme-opt i { margin-right: 4px; }
+
+        /* ───── HISTORY LIST FIXED SCROLL ───── */
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-width: 420px;
+            margin: 0 auto;
+            max-height: 340px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+            padding-right: 2px;
+        }
+        .history-list::-webkit-scrollbar { width: 3px; }
+        .history-list::-webkit-scrollbar-thumb { background: var(--accent2); border-radius: 3px; }

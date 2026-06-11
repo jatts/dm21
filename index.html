@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="ur">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Discount Manager</title>
+
+    <!-- Vendor CSS: FontAwesome icons -->
+    <link rel="stylesheet" href="assets/css/all.min.css">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <!-- App CSS — each file covers one section of the UI -->
+    <link rel="stylesheet" href="css/variables.css">   <!-- CSS vars, base, light mode, body -->
+    <link rel="stylesheet" href="css/gamebar.css">     <!-- Top gamebar (coins, level, scans) -->
+    <link rel="stylesheet" href="css/layout.css">      <!-- Page container, bottom nav -->
+    <link rel="stylesheet" href="css/scanner.css">     <!-- Camera box, torch, focus, countdown -->
+    <link rel="stylesheet" href="css/results.css">     <!-- Result cards, price calculator, toggles -->
+    <link rel="stylesheet" href="css/history.css">     <!-- Ad prompt, section header, scan history -->
+    <link rel="stylesheet" href="css/stats.css">       <!-- Stats page, profile, achievements, rank, theme toggle -->
+    <link rel="stylesheet" href="css/settings.css">    <!-- Settings page, toast, loading screen -->
+    <link rel="stylesheet" href="css/auth.css">        <!-- Login/signup overlay, tabs, dropdowns -->
+    <link rel="stylesheet" href="css/leaderboard.css"> <!-- Leaderboard tabs, list, badges -->
+
+    <!-- Vendor JS: sql.js (SQLite in browser) -->
+    <script src="assets/js/sql-wasm.min.js"></script>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════
+     LOGIN / SIGNUP OVERLAY
+══════════════════════════════════════ -->
+<div id="loginOverlay">
+    <div class="login-card" style="max-width:360px;width:100%">
+        <div class="login-logo">Discount Manager</div>
+
+        <!-- Tabs -->
+        <div class="auth-tabs">
+            <button class="auth-tab active" id="tabLoginBtn" onclick="switchAuthTab('login')">
+                <i class="fas fa-sign-in-alt" style="margin-right:5px"></i>Login
+            </button>
+            <button class="auth-tab" id="tabSignupBtn" onclick="switchAuthTab('signup')">
+                <i class="fas fa-user-plus" style="margin-right:5px"></i>Sign Up
+            </button>
+        </div>
+
+        <!-- LOGIN FORM -->
+        <div id="loginForm">
+            <div class="login-sub" style="margin-top:-8px">Employee ID aur password se login karein</div>
+            <div style="height:10px"></div>
+            <div class="login-field">
+                <i class="fas fa-id-badge"></i>
+                <input type="text" id="loginIdInput" class="login-input"
+                    placeholder="Employee Code (e.g. DM-100001)"
+                    autocomplete="off" autocorrect="off" spellcheck="false">
+            </div>
+            <div class="login-field">
+                <i class="fas fa-lock"></i>
+                <input type="password" id="loginPassInput" class="login-input"
+                    placeholder="Password (mobile number)" autocomplete="off">
+            </div>
+            <button class="login-btn" id="loginBtn">
+                <i class="fas fa-sign-in-alt"></i> Login
+            </button>
+            <div class="login-err" id="loginErr"></div>
+        </div>
+
+        <!-- SIGNUP FORM -->
+        <div id="signupForm" style="display:none">
+            <div class="login-sub" style="margin-top:-8px">Naya employee account banayein</div>
+            <div style="height:10px"></div>
+            <div class="signup-form">
+
+                <div class="login-field">
+                    <i class="fas fa-id-badge"></i>
+                    <input type="text" id="suEmpCode" class="login-input"
+                        placeholder="Employee Code * (e.g. E-1234 ya 12345)"
+                        autocomplete="off" autocorrect="off" spellcheck="false">
+                </div>
+                <div class="login-field">
+                    <i class="fas fa-user"></i>
+                    <input type="text" id="suName" class="login-input"
+                        placeholder="Poora Naam *"
+                        autocomplete="off" autocorrect="off">
+                </div>
+                <div class="login-field">
+                    <i class="fas fa-mobile-alt"></i>
+                    <input type="tel" id="suMobile" class="login-input"
+                        placeholder="Mobile * e.g. 03001234567 (password bhi yahi hoga)"
+                        autocomplete="off" maxlength="11">
+                </div>
+                <div class="login-field">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <select id="suRegion" class="login-select">
+                        <option value="">-- Region Select Karein *</option>
+                        <option value="Karachi">Karachi</option>
+                        <option value="Lahore">Lahore</option>
+                        <option value="Islamabad">Islamabad</option>
+                    </select>
+                </div>
+
+                <!-- City searchable dropdown -->
+                <div class="login-field" style="position:relative">
+                    <i class="fas fa-city"></i>
+                    <input type="text" id="suCityInput" class="login-input"
+                        placeholder="City Search karein * (e.g. Karachi)"
+                        autocomplete="off" autocorrect="off" spellcheck="false">
+                    <input type="hidden" id="suCity">
+                    <div id="cityDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:200;background:var(--surface);border:1px solid var(--border);border-radius:10px;max-height:160px;overflow-y:auto;box-shadow:0 4px 20px rgba(0,0,0,.3)"></div>
+                </div>
+
+                <div class="login-field">
+                    <i class="fas fa-tag"></i>
+                    <select id="suBrand" class="login-select">
+                        <option value="">-- Brand Select Karein *</option>
+                        <option value="J. Junaid Jamshed">J. Junaid Jamshed</option>
+                        <option value="Almirah">Almirah</option>
+                    </select>
+                </div>
+
+                <button class="login-btn" id="signupBtn">
+                    <i class="fas fa-user-plus"></i> Account Banayein
+                </button>
+                <div class="login-err" id="signupErr"></div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     INTERNET CONNECTION OVERLAY
+══════════════════════════════════════ -->
+<div id="netOverlay">
+    <div class="net-emoji">&#x1F4E1;</div>
+    <div class="net-title">Connection Lost!</div>
+    <div class="net-sub">Yaar, internet toh connect karo pehle &#x1F605;<br>WiFi ya Data ON karo aur Try Again dabao.</div>
+    <div class="net-dots">
+        <div class="net-dot"></div>
+        <div class="net-dot"></div>
+        <div class="net-dot"></div>
+    </div>
+    <button class="net-try-btn" id="netRetryBtn">&#x1F504; Try Again</button>
+    <div class="net-status-chip" id="netStatusChip">Checking connection...</div>
+</div>
+
+<!-- ══════════════════════════════════════
+     LOADING SCREEN
+══════════════════════════════════════ -->
+<div id="loading">
+    <div class="loading-logo">Discount Manager</div>
+    <div class="loading-spinner" id="loadingSpinner"></div>
+    <div class="loading-msg"    id="loadingMsg">Database check ho rahi hai...</div>
+    <div class="loading-sub"    id="loadingSub"></div>
+    <div class="loading-bar-wrap" id="loadingBarWrap" style="display:none">
+        <div class="loading-bar-track">
+            <div class="loading-bar-fill" id="loadingBarFill"></div>
+        </div>
+        <div class="loading-bar-pct" id="loadingBarPct">0%</div>
+    </div>
+</div>
+
+<!-- Toast notification -->
+<div id="toast"></div>
+
+<!-- ══════════════════════════════════════
+     GAMEBAR (top bar: coins / level / scans)
+══════════════════════════════════════ -->
+<div id="gamebar-wrap">
+    <div class="gb-block">
+        <i class="fas fa-coins gb-icon coin"></i>
+        <div class="gb-texts">
+            <span class="gb-val" id="coinCount" style="color:#ffd600">30</span>
+            <span class="gb-label">Coins</span>
+        </div>
+        <div class="gb-bar"><div class="gb-bar-fill coin-fill" id="coinProgressFill" style="width:100%"></div></div>
+    </div>
+    <div class="gb-block center" style="flex-direction:column;gap:2px">
+        <div class="lvl-badge" id="levelInfo">Lvl 1</div>
+        <div id="gbRankTitle" style="font-size:8px;color:rgba(255,255,255,0.5);text-align:center;font-family:var(--font-main);letter-spacing:0.3px;margin-top:1px"></div>
+        <div id="gbUserName" style="font-size:9px;color:rgba(255,255,255,0.5);font-family:var(--font-mono);white-space:nowrap;max-width:90px;overflow:hidden;text-overflow:ellipsis">---</div>
+    </div>
+    <div class="gb-block right">
+        <div class="gb-bar"><div class="gb-bar-fill scan-fill" id="scanProgressFill" style="width:0%"></div></div>
+        <div class="gb-texts" style="text-align:right">
+            <span class="gb-val" id="scanCount" style="color:var(--accent)">0</span>
+            <span class="gb-label">Scans</span>
+        </div>
+        <i class="fas fa-star gb-icon scan"></i>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     PAGES CONTAINER
+══════════════════════════════════════ -->
+<div id="pages">
+
+    <!-- ── SCAN PAGE ── -->
+    <div class="page active" id="page-scan">
+
+        <!-- ── EVENT BANNER ── -->
+        <div id="eventBanner" class="event-banner">
+            <div class="event-banner-track">
+                <span class="event-banner-dot"></span>
+                <div class="event-banner-marquee">
+                    <span id="eventBannerText">Loading...</span>
+                    <span id="eventBannerText2">Loading...</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="scan-hero">
+            <!-- Hidden barcode input (populated by scanner or search) -->
+            <input type="text" id="barcodeInput" style="display:none"
+                autocomplete="off" autocorrect="off" spellcheck="false">
+
+            <!-- INLINE SCANNER BOX -->
+            <div id="scannerBox">
+                <video id="cameraFeed" autoplay playsinline muted></video>
+
+                <!-- Countdown overlay (continuous mode pause) -->
+                <div id="countdownOverlay">
+                    <div class="cd-number" id="cdNumber">5</div>
+                    <div class="cd-bar-wrap"><div class="cd-bar-fill" id="cdBarFill" style="width:100%"></div></div>
+                    <div class="cd-label">Agli scan mein...</div>
+                    <button class="cd-skip" id="cdSkipBtn">&#x26A1; Abhi Scan Karo</button>
+                </div>
+
+                <!-- Continuous scan controls -->
+                <div class="scanner-controls-row">
+                    <div class="cont-toggle-wrap">
+                        <label class="toggle" style="width:28px;height:16px">
+                            <input type="checkbox" id="contScanToggle">
+                            <div class="toggle-track"></div>
+                            <div class="toggle-thumb" style="width:12px;height:12px;top:2px;left:2px"></div>
+                        </label>
+                        <span class="cont-label" id="contLabel">Continuous</span>
+                    </div>
+                    <span style="font-size:10px;color:rgba(255,255,255,.5);font-family:var(--font-mono)">Delay:</span>
+                    <select class="delay-select" id="delaySelect">
+                        <option value="1">1s</option>
+                        <option value="2">2s</option>
+                        <option value="3" selected>3s</option>
+                        <option value="5">5s</option>
+                        <option value="7">7s</option>
+                        <option value="10">10s</option>
+                        <option value="15">15s</option>
+                    </select>
+                </div>
+
+                <!-- Manual focus slider -->
+                <div class="focus-row" id="focusRow">
+                    <span class="focus-icon near">&#x1F50D;</span>
+                    <span class="focus-label">Focus</span>
+                    <input type="range" class="focus-slider" id="focusSlider" min="0" max="100" value="50">
+                    <span class="focus-icon far">&#x1F3D4;&#xFE0F;</span>
+                </div>
+
+                <!-- Scanner corner decorations -->
+                <div class="sf-tl"></div>
+                <div class="sf-tr"></div>
+                <div class="sf-bl"></div>
+                <div class="sf-br"></div>
+                <div class="scanner-line"></div>
+
+                <!-- Scanner status + torch button -->
+                <div class="scanner-toolbar">
+                    <span class="scanner-status-inline" id="scannerStatus">Camera shuru ho raha hai...</span>
+                    <div class="scanner-toolbar-btns">
+                        <button class="torch-btn" id="torchBtn" title="Flashlight">
+                            <i class="fas fa-bolt"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Coin exhausted prompt -->
+        <div class="ad-prompt" id="adPrompt">
+            <p><i class="fas fa-exclamation-triangle"></i> کوئی سکین باقی نہیں!</p>
+            <button class="ad-btn" id="watchAdBtn"><i class="fas fa-play-circle"></i> 30 Coins کے لیے Ad دیکھیں</button>
+        </div>
+
+        <!-- Result cards: Discount % and After-price -->
+        <div class="result-cards">
+            <div class="rcard percent">
+                <div class="rcard-label">Discount %</div>
+                <div class="rcard-val" id="percentageValue">--</div>
+                <div class="tts-row">
+                    <span class="tts-label"><i class="fas fa-volume-up" style="font-size:10px"></i></span>
+                    <label class="toggle">
+                        <input type="checkbox" id="togglePercentage" checked>
+                        <div class="toggle-track"></div>
+                        <div class="toggle-thumb"></div>
+                    </label>
+                </div>
+            </div>
+            <div class="rcard afterp" id="afterPriceCard" style="cursor:default">
+                <div class="rcard-label">After % Price</div>
+                <div class="rcard-val" id="afterPriceValue">--</div>
+                <div class="tts-row">
+                    <span class="tts-label"><i class="fas fa-volume-up" style="font-size:10px"></i></span>
+                    <label class="toggle">
+                        <input type="checkbox" id="toggleAfterPrice">
+                        <div class="toggle-track"></div>
+                        <div class="toggle-thumb"></div>
+                    </label>
+                </div>
+                <div id="calcHint" style="display:none;font-size:10px;color:var(--accent2);margin-top:6px;font-weight:600">
+                    <i class="fas fa-calculator" style="margin-right:3px"></i>Tap to enter price
+                </div>
+            </div>
+        </div>
+
+        <!-- Scan history list -->
+        <div class="section-header">
+            <div class="section-title"><i class="fas fa-history" style="margin-right:5px"></i>Scan History</div>
+            <button class="clear-btn" id="clearHistoryBtn"><i class="fas fa-trash-alt"></i> Clear</button>
+        </div>
+        <div class="history-list" id="historyList">
+            <div class="empty-state"><i class="fas fa-barcode"></i>Koi scan nahi kiya abhi tak</div>
+        </div>
+    </div>
+
+    <!-- ── SEARCH PAGE ── -->
+    <div class="page" id="page-search">
+        <div class="section-title" style="margin-bottom:12px"><i class="fas fa-search" style="margin-right:5px"></i>Article Search</div>
+        <div class="search-bar">
+            <input type="text" id="searchInput" class="search-input" placeholder="Article name ya barcode likhein...">
+            <button class="search-clear" id="searchClearBtn" title="Clear"><i class="fas fa-times"></i></button>
+            <button class="search-go" id="searchGoBtn"><i class="fas fa-search"></i></button>
+        </div>
+        <div id="searchResults">
+            <div class="empty-state"><i class="fas fa-search"></i>Search results yahan dikhengi</div>
+        </div>
+    </div>
+
+    <!-- ── STATS PAGE ── -->
+    <div class="page" id="page-stats">
+
+        <!-- Player Profile Card -->
+        <div class="player-profile-card">
+            <div class="pp-avatar-wrap" id="ppAvatarWrap">
+                <div class="pp-avatar-placeholder" id="ppAvatarPlaceholder" style="font-size:22px;font-weight:700;letter-spacing:-1px">?</div>
+                <img id="ppAvatar" style="display:none;width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid var(--accent2)">
+                <div class="pp-avatar-edit" id="ppAvatarEditBtn"><i class="fas fa-camera"></i></div>
+            </div>
+            <div class="pp-info">
+                <div class="pp-name-row">
+                    <span class="pp-name" id="ppName">Player</span>
+                    <button class="pp-edit-btn" id="ppEditBtn"><i class="fas fa-pen"></i></button>
+                </div>
+                <div class="pp-id">ID: <span id="ppId">---</span></div>
+                <div style="font-size:11px;color:var(--muted);margin-top:3px" id="ppBrandRegion">---</div>
+                <div style="font-size:10px;color:var(--muted);margin-top:2px" id="ppJoined"></div>
+                <div style="margin-top:5px">
+                    <span style="font-size:10px;background:rgba(0,230,118,0.15);color:var(--success);border-radius:20px;padding:2px 10px;font-family:var(--font-mono)" id="ppLoginStatus">● Online</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Profile Overlay -->
+        <div id="profileEditOverlay" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:24px">
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:20px;width:100%;max-width:340px">
+                <div style="font-size:14px;font-weight:700;margin-bottom:14px;color:var(--text)"><i class="fas fa-user-edit" style="margin-right:6px;color:var(--accent2)"></i>Profile Edit Karein</div>
+                <input type="text" id="ppNameInput" maxlength="24" placeholder="Apna naam likhein..." style="width:100%;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-size:14px;color:var(--text);outline:none;margin-bottom:12px;font-family:var(--font-main)">
+                <div style="display:flex;gap:8px">
+                    <button id="ppSaveBtn" style="flex:1;background:linear-gradient(135deg,var(--accent2),var(--accent));color:#fff;border:none;border-radius:10px;padding:10px;font-weight:700;font-size:14px;cursor:pointer">Save</button>
+                    <button id="ppCancelBtn" style="flex:1;background:var(--card);border:1px solid var(--border);color:var(--muted);border-radius:10px;padding:10px;font-weight:700;font-size:14px;cursor:pointer">Cancel</button>
+                </div>
+            </div>
+        </div>
+        <input type="file" id="ppAvatarInput" accept="image/*" style="display:none">
+
+        <!-- Level Progress Bar -->
+        <div class="level-progress-wrap" style="margin-bottom:12px">
+            <div class="level-row">
+                <div class="level-title">Level Progress</div>
+                <div class="level-badge-big" id="statLevelBadge">Lvl 1</div>
+            </div>
+            <div class="big-bar"><div class="big-bar-fill" id="bigScanFill" style="width:0%"></div></div>
+            <div class="level-sub" id="levelSubText">Next level ke liye 100 scans</div>
+            <div id="levelTitleLine" style="margin-top:6px;font-size:12px;color:var(--muted);font-weight:600;display:flex;align-items:center;gap:6px"><span id="rankIconInline" style="font-size:14px"></span><span id="rankTitleInline" style="color:var(--text)"></span><span style="color:var(--muted)">·</span><span id="rankDescInline" style="font-weight:400"></span></div>
+        </div>
+
+        <!-- Game Stats Grid -->
+        <div class="stats-grid" style="margin-bottom:12px">
+            <div class="stat-card">
+                <div class="stat-card-label">Total Scans</div>
+                <div class="stat-card-val" id="statTotalScans">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card-label">Today Scans</div>
+                <div class="stat-card-val" id="statToday">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card-label">Coins Left</div>
+                <div class="stat-card-val" id="statCoins">30</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card-label">Coins Earned</div>
+                <div class="stat-card-val" id="statCoinsEarned">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card-label">Scan Streak 🔥</div>
+                <div class="stat-card-val" id="statStreak">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card-label">Coins Spent</div>
+                <div class="stat-card-val" id="statCoinsSpent">0</div>
+            </div>
+        </div>
+
+        <!-- Achievements -->
+        <div class="section-title" style="margin-bottom:8px"><i class="fas fa-trophy" style="margin-right:5px;color:#ffd600"></i>Achievements</div>
+        <div class="achievements-grid" id="achievementsGrid" style="margin-bottom:10px"></div>
+
+        <!-- Merged Title (shown under level progress) -->
+        <div id="rankCard" style="display:none"></div>
+
+        <!-- Leaderboard -->
+        <div class="section-title" style="margin-bottom:8px">
+            <i class="fas fa-crown" style="margin-right:5px;color:#ffd600"></i>Top 10 Scanner
+            <button class="lb-refresh-btn" id="lbRefreshBtn"><i class="fas fa-sync-alt"></i> Refresh</button>
+        </div>
+
+        <!-- Region Tabs -->
+        <div class="lb-tabs">
+            <button class="lb-tab active" data-region="pakistan" onclick="lbShowTab('pakistan',this)">&#x1F1F5;&#x1F1F0; Pakistan</button>
+            <button class="lb-tab" data-region="islamabad" onclick="lbShowTab('islamabad',this)">ISB</button>
+            <button class="lb-tab" data-region="lahore" onclick="lbShowTab('lahore',this)">LHR</button>
+            <button class="lb-tab" data-region="karachi" onclick="lbShowTab('karachi',this)">KHI</button>
+        </div>
+
+        <div id="lbContent">
+            <div class="lb-loading"><i class="fas fa-spinner fa-spin" style="margin-right:6px"></i>Loading leaderboard...</div>
+        </div>
+
+    </div>
+
+    <!-- ── SETTINGS PAGE ── -->
+    <div class="page" id="page-settings">
+        <div class="section-title" style="margin-bottom:12px"><i class="fas fa-cog" style="margin-right:5px"></i>Settings</div>
+
+        <!-- Appearance -->
+        <div class="settings-section">
+            <div class="settings-section-title">Appearance</div>
+            <div class="setting-row">
+                <div class="setting-info">
+                    <div class="setting-name">Theme</div>
+                    <div class="setting-desc" id="themeDesc">Dark Mode active hai</div>
+                </div>
+                <div class="theme-toggle-wrap" id="themeToggleWrap">
+                    <button class="theme-opt active" id="themeDarkBtn" onclick="setTheme('dark')">
+                        <i class="fas fa-moon"></i> Dark
+                    </button>
+                    <button class="theme-opt" id="themeLightBtn" onclick="setTheme('light')">
+                        <i class="fas fa-sun"></i> Light
+                    </button>
+                </div>
+            </div>
+        </div>
+
+
+
+        <!-- Account -->
+        <div class="settings-section">
+            <div class="settings-section-title">Account</div>
+
+            <div class="setting-row">
+                <div class="setting-info">
+                    <div class="setting-name"><i class="fas fa-user" style="margin-right:6px;color:var(--accent2)"></i>Logged in as</div>
+                    <div class="setting-desc" id="settingLoggedInAs">---</div>
+                </div>
+            </div>
+            <div class="setting-row" style="cursor:pointer" id="logoutRow">
+                <div class="setting-info">
+                    <div class="setting-name" style="color:var(--danger)"><i class="fas fa-sign-out-alt" style="margin-right:6px"></i>Logout</div>
+                    <div class="setting-desc">Account se bahar niklo</div>
+                </div>
+                <i class="fas fa-chevron-right" style="color:var(--muted);font-size:13px"></i>
+            </div>
+        </div>
+
+        <!-- Coins -->
+        <div class="settings-section">
+            <div class="settings-section-title">Coins</div>
+            <div class="setting-row">
+                <div class="setting-info">
+                    <div class="setting-name">Watch Ad</div>
+                    <div class="setting-desc">30 coins earn karein (max 90)</div>
+                </div>
+                <button class="setting-btn" style="border-color:rgba(0,229,255,.3);color:var(--accent);background:rgba(0,229,255,.08)" id="settingWatchAd">
+                    <i class="fas fa-play-circle"></i> Watch
+                </button>
+            </div>
+            <div class="setting-row" style="cursor:pointer" id="settingResetGame">
+                <div class="setting-info">
+                    <div class="setting-name" style="color:var(--warning)"><i class="fas fa-redo" style="margin-right:6px"></i>Reset Game</div>
+                    <div class="setting-desc">Coins, scans aur level reset karein</div>
+                </div>
+                <i class="fas fa-chevron-right" style="color:var(--muted);font-size:13px"></i>
+            </div>
+        </div>
+
+        <!-- App Info -->
+        <div class="settings-section">
+            <div class="settings-section-title">App Info</div>
+            <div class="setting-row" style="cursor:pointer" id="privacyPolicyRow">
+                <div class="setting-info">
+                    <div class="setting-name"><i class="fas fa-shield-alt" style="margin-right:6px;color:var(--accent2)"></i>Privacy Policy</div>
+                    <div class="setting-desc">Data usage aur permissions</div>
+                </div>
+                <i class="fas fa-chevron-right" style="color:var(--muted);font-size:13px"></i>
+            </div>
+            <div class="setting-row" style="cursor:pointer" id="termsRow">
+                <div class="setting-info">
+                    <div class="setting-name"><i class="fas fa-file-alt" style="margin-right:6px;color:var(--accent)"></i>Terms of Use</div>
+                    <div class="setting-desc">App usage ki terms</div>
+                </div>
+                <i class="fas fa-chevron-right" style="color:var(--muted);font-size:13px"></i>
+            </div>
+            <!-- DB Version Card — inline, no tap needed -->
+            <div class="setting-row" id="dbInfoRow">
+                <div class="setting-info">
+                    <div class="setting-name">
+                        <i class="fas fa-database" style="margin-right:6px;color:var(--accent)"></i>Database
+                        <span id="dbStatusDot" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--muted);margin-left:6px;vertical-align:middle"></span>
+                    </div>
+                    <div class="setting-desc" id="dbInfoDesc">Loading...</div>
+                </div>
+                <span id="dbVerBadge" style="font-family:var(--font-mono);font-size:11px;color:var(--accent);background:rgba(0,229,255,0.1);padding:2px 8px;border-radius:20px;flex-shrink:0">v?</span>
+            </div>
+
+
+
+
+        </div>
+
+        <div class="version-info">
+            Discount Manager &nbsp;·&nbsp; <span>v2.0</span> &nbsp;·&nbsp; DB <span id="dbVerFooter">v?</span>
+        </div>
+    </div>
+
+    <!-- Privacy Policy Overlay -->
+    <div id="privacyOverlay" style="display:none;position:fixed;inset:0;z-index:9500;background:var(--bg);flex-direction:column">
+        <div style="display:flex;align-items:center;gap:12px;padding:16px;border-bottom:1px solid var(--border);flex-shrink:0">
+            <button id="privacyBackBtn" style="width:34px;height:34px;border-radius:50%;background:var(--card);border:1px solid var(--border);color:var(--text);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center"><i class="fas fa-arrow-left"></i></button>
+            <span style="font-size:15px;font-weight:700"><i class="fas fa-shield-alt" style="margin-right:6px;color:var(--accent2)"></i>Privacy Policy</span>
+        </div>
+        <div style="flex:1;overflow-y:auto;padding:20px 16px;line-height:1.7;font-size:13px;color:var(--text)">
+            <p style="color:var(--muted);font-size:11px;margin-bottom:16px">Last updated: June 2026</p>
+            <h3 style="color:var(--accent2);font-size:13px;margin-bottom:8px">1. Introduction</h3>
+            <p style="margin-bottom:14px">Discount Manager ("App") aapki privacy ki hifazat karna chahta hai. Ye policy batati hai ke hum kya data collect karte hain aur kaise use karte hain.</p>
+            <h3 style="color:var(--accent2);font-size:13px;margin-bottom:8px">2. Data Collection</h3>
+            <p style="margin-bottom:8px"><strong>Local Data (Device par stored):</strong></p>
+            <ul style="margin-bottom:14px;padding-left:18px;color:var(--muted)">
+                <li style="margin-bottom:4px">Scan history (sirf aapke device par)</li>
+                <li style="margin-bottom:4px">Game progress — coins, level, total scans</li>
+                <li style="margin-bottom:4px">Player profile — naam aur avatar (aapke device par)</li>
+                <li style="margin-bottom:4px">App settings aur theme preference</li>
+            </ul>
+            <p style="margin-bottom:14px">Ye sab data sirf aapke device ki local storage mein save hota hai. Koi bhi server par upload nahi hota.</p>
+            <h3 style="color:var(--accent2);font-size:13px;margin-bottom:8px">3. Camera Permission</h3>
+            <p style="margin-bottom:14px">App barcode scan karne ke liye camera access maangti hai. Camera sirf scanning ke waqt use hoti hai. Koi bhi photo save ya upload nahi hoti.</p>
+            <h3 style="color:var(--accent2);font-size:13px;margin-bottom:8px">4. Internet Connection</h3>
+            <p style="margin-bottom:14px">App ko internet chahiye kyunki database aur app files online server se load hoti hain. Hum koi bhi personal data internet par nahi bhejtay.</p>
+            <h3 style="color:var(--accent2);font-size:13px;margin-bottom:8px">5. Advertisements</h3>
+            <p style="margin-bottom:14px">Future mein app mein ads (AdMob) shamil ho sakti hain. Ads ke liye Google ki apni privacy policy apply hogi.</p>
+            <h3 style="color:var(--accent2);font-size:13px;margin-bottom:8px">6. Third-Party Services</h3>
+            <p style="margin-bottom:14px">App Google Fonts aur FontAwesome icons use karti hai jo internet se load hoti hain.</p>
+            <h3 style="color:var(--accent2);font-size:13px;margin-bottom:8px">7. Children</h3>
+            <p style="margin-bottom:14px">Ye app kisi bhi age group ke liye safe hai. Hum 13 saal se kam umra ke bachon ka koi personal data collect nahi karte.</p>
+            <h3 style="color:var(--accent2);font-size:13px;margin-bottom:8px">8. Contact</h3>
+            <p style="margin-bottom:14px">Privacy se related koi sawal ho toh app developer se app store ke zariye rabta karein.</p>
+            <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-top:8px;text-align:center">
+                <div style="font-size:11px;color:var(--muted)">By using Discount Manager, you agree to this Privacy Policy.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Terms of Use Overlay -->
+    <div id="termsOverlay" style="display:none;position:fixed;inset:0;z-index:9500;background:var(--bg);flex-direction:column">
+        <div style="display:flex;align-items:center;gap:12px;padding:16px;border-bottom:1px solid var(--border);flex-shrink:0">
+            <button id="termsBackBtn" style="width:34px;height:34px;border-radius:50%;background:var(--card);border:1px solid var(--border);color:var(--text);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center"><i class="fas fa-arrow-left"></i></button>
+            <span style="font-size:15px;font-weight:700"><i class="fas fa-file-alt" style="margin-right:6px;color:var(--accent)"></i>Terms of Use</span>
+        </div>
+        <div style="flex:1;overflow-y:auto;padding:20px 16px;line-height:1.7;font-size:13px;color:var(--text)">
+            <p style="color:var(--muted);font-size:11px;margin-bottom:16px">Last updated: June 2026</p>
+            <h3 style="color:var(--accent);font-size:13px;margin-bottom:8px">1. App ka Maqsad</h3>
+            <p style="margin-bottom:14px">Discount Manager ek barcode scanning tool hai jo retail stores mein article discount information dekhne ke liye banaya gaya hai.</p>
+            <h3 style="color:var(--accent);font-size:13px;margin-bottom:8px">2. Database</h3>
+            <p style="margin-bottom:14px">App ka database sirf usi store ke articles ke liye hai jiske liye ye app banaya gaya hai. Database mein galti hone ki soorat mein hum zimmedar nahi hain.</p>
+            <h3 style="color:var(--accent);font-size:13px;margin-bottom:8px">3. Acceptable Use</h3>
+            <p style="margin-bottom:14px">App sirf authorized users ke liye hai. App ko hack karne, reverse engineer karne ya misuse karne ki koshish karna mana hai.</p>
+            <h3 style="color:var(--accent);font-size:13px;margin-bottom:8px">4. Disclaimer</h3>
+            <p style="margin-bottom:14px">Prices aur discounts mein errors ho sakte hain. Final price ke liye hamesha cashier ya store manager se confirm karein.</p>
+            <h3 style="color:var(--accent);font-size:13px;margin-bottom:8px">5. Changes</h3>
+            <p style="margin-bottom:14px">Hum kabhi bhi in terms ko update kar sakte hain. App ka continued use matlab aap updated terms se agree karte hain.</p>
+        </div>
+    </div>
+
+</div>
+
+<!-- ══════════════════════════════════════
+     PRICE CALCULATOR OVERLAY
+══════════════════════════════════════ -->
+<div id="priceCalcOverlay">
+    <div class="calc-sheet">
+        <div class="calc-header">
+            <div class="calc-title">Price Enter Karein</div>
+            <div class="calc-pct-badge" id="calcPctBadge">50%</div>
+            <button class="calc-close" id="calcCloseBtn"><i class="fas fa-times"></i></button>
+        </div>
+
+        <div class="calc-display-row">
+            <input type="text" class="calc-display" id="calcDisplay"
+                placeholder="0" readonly inputmode="none">
+            <button class="calc-clear-btn" id="calcClearBtn">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="calc-pad" style="margin-top:10px">
+            <button class="calc-key" data-key="7">7</button>
+            <button class="calc-key" data-key="8">8</button>
+            <button class="calc-key" data-key="9">9</button>
+            <button class="calc-key" data-key="4">4</button>
+            <button class="calc-key" data-key="5">5</button>
+            <button class="calc-key" data-key="6">6</button>
+            <button class="calc-key" data-key="1">1</button>
+            <button class="calc-key" data-key="2">2</button>
+            <button class="calc-key" data-key="3">3</button>
+            <button class="calc-key key-0" data-key="0">0</button>
+            <button class="calc-key key-enter" id="calcEnterBtn">
+                <i class="fas fa-check"></i> Enter
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     BOTTOM NAVIGATION
+══════════════════════════════════════ -->
+<div id="bottom-nav">
+    <!-- Button row — sits above Android gesture zone -->
+    <div id="nav-inner">
+        <button class="nav-btn active" id="nav-scan" onclick="showPage('scan',this)">
+            <div class="nav-icon-wrap"><i class="fas fa-home"></i></div>
+            <span class="nav-label">Home</span>
+        </button>
+        <button class="nav-btn" id="nav-search" onclick="showPage('search',this)">
+            <div class="nav-icon-wrap"><i class="fas fa-search"></i></div>
+            <span class="nav-label">Search</span>
+        </button>
+        <!-- Center gap for FAB -->
+        <div class="nav-fab-slot"></div>
+        <button class="nav-btn" id="nav-stats" onclick="showPage('stats',this)">
+            <div class="nav-icon-wrap"><i class="fas fa-chart-bar"></i></div>
+            <span class="nav-label">Stats</span>
+        </button>
+        <button class="nav-btn" id="nav-settings" onclick="showPage('settings',this)">
+            <div class="nav-icon-wrap"><i class="fas fa-cog"></i></div>
+            <span class="nav-label">Settings</span>
+        </button>
+    </div>
+    <!-- Android gesture / 3-button nav safe area -->
+    <div id="nav-safe-zone"></div>
+</div>
+
+<!-- Floating Action Button (barcode scan) -->
+<button class="fab-btn" id="fabBtn">
+    <i class="fas fa-barcode"></i>
+</button>
+
+<!-- ══════════════════════════════════════
+     JAVASCRIPT MODULES
+     Load order matters — dependencies first
+══════════════════════════════════════ -->
+
+<!-- 1. Storage layer (must be first — everything depends on AppDB) -->
+<script src="js/appdb.js"></script>
+
+<!-- 2. Scanner (camera, BarcodeDetector, torch, countdown) -->
+<script src="js/scanner.js"></script>
+
+<!-- 3. Game bar (coins, level, scans state) -->
+<script src="js/gamebar.js"></script>
+
+
+<!-- 5. Utilities (validateInput, TTS queue, showToast) -->
+<script src="js/utils.js"></script>
+
+<!-- 6. Navigation (showPage, page switching) -->
+<script src="js/navigation.js"></script>
+
+<!-- 7. Scan history (save, render, clear) -->
+<script src="js/history.js"></script>
+
+<!-- 8. Lookup engine (anti-cheat + barcode DB lookup) -->
+<script src="js/lookup.js"></script>
+
+<!-- 9. Search page -->
+<script src="js/search.js"></script>
+
+<!-- 10. Stats page (achievements, ranks, updateStatsPage) -->
+<script src="js/stats.js"></script>
+
+<!-- 11. Price calculator overlay -->
+<script src="js/calculator.js"></script>
+
+<!-- 12. Theme (dark/light toggle) -->
+<script src="js/theme.js"></script>
+
+<!-- 13. Settings page (beep, vibrate, reset, privacy, terms) -->
+<script src="js/settings.js"></script>
+
+<!-- 14. Avatar helpers (show/hide/upload to Drive) — must load before auth -->
+<script src="js/avatar.js"></script>
+
+<!-- 15. Auth (login, signup, session, GS Auth) -->
+<script src="js/auth.js"></script>
+
+<!-- 15b. Database — auth ke baad load (gsGetSession + GS_SCRIPT_URL depend karta hai) -->
+<script src="js/database.js"></script>
+
+<!-- 16. Sync (GS event queue, flush, sync status) -->
+<script src="js/sync.js"></script>
+
+<!-- 17. Player profile (load, edit name, join date) -->
+<script src="js/profile.js"></script>
+
+<!-- 18. Leaderboard (fetch, render, tabs, refresh) -->
+<script src="js/leaderboard.js"></script>
+
+<!-- 19. Connectivity monitor (online/offline overlay) -->
+<script src="js/connectivity.js"></script>
+
+<!-- 20. Boot (updateGameBar, renderHistory, initDatabase — runs last) -->
+<script src="js/boot.js"></script>
+
+
+
+<!-- Logout Confirm Card -->
+<div id="logoutConfirmOverlay" style="display:none;position:fixed;inset:0;z-index:9700;background:rgba(0,0,0,0.6);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:24px">
+    <div style="background:var(--surface);border-radius:20px;padding:24px;width:100%;max-width:320px;border:1px solid var(--border);box-shadow:0 20px 60px rgba(0,0,0,0.5)">
+        <div style="width:48px;height:48px;border-radius:50%;background:rgba(255,23,68,0.12);display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
+            <i class="fas fa-sign-out-alt" style="font-size:20px;color:var(--danger)"></i>
+        </div>
+        <div style="text-align:center;margin-bottom:8px;font-size:16px;font-weight:700;color:var(--text)">Logout karein?</div>
+        <div style="text-align:center;font-size:13px;color:var(--muted);margin-bottom:24px;line-height:1.5">Dobara login karna hoga</div>
+        <div style="display:flex;gap:10px">
+            <button onclick="cancelLogout()" style="flex:1;padding:12px;border-radius:12px;background:var(--card);border:1px solid var(--border);color:var(--text);font-size:14px;font-weight:600;cursor:pointer">Rehne do</button>
+            <button onclick="doLogout()" style="flex:1;padding:12px;border-radius:12px;background:var(--danger);border:none;color:#fff;font-size:14px;font-weight:600;cursor:pointer">Logout</button>
+        </div>
+    </div>
+</div>
+
+<!-- Reset Game Confirm -->
+<div id="resetConfirmOverlay" style="display:none;position:fixed;inset:0;z-index:9700;background:rgba(0,0,0,0.6);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:24px">
+    <div style="background:var(--surface);border-radius:20px;padding:24px;width:100%;max-width:320px;border:1px solid var(--border);box-shadow:0 20px 60px rgba(0,0,0,0.5)">
+        <div style="width:48px;height:48px;border-radius:50%;background:rgba(255,145,0,0.12);display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
+            <i class="fas fa-redo" style="font-size:20px;color:var(--warn)"></i>
+        </div>
+        <div style="text-align:center;margin-bottom:8px;font-size:16px;font-weight:700;color:var(--text)">Reset karein?</div>
+        <div style="text-align:center;font-size:13px;color:var(--muted);margin-bottom:24px;line-height:1.5">Coins, Level aur Scans sab reset ho jayenge</div>
+        <div style="display:flex;gap:10px">
+            <button onclick="cancelReset()" style="flex:1;padding:12px;border-radius:12px;background:var(--card);border:1px solid var(--border);color:var(--text);font-size:14px;font-weight:600;cursor:pointer">Cancel</button>
+            <button onclick="doResetGame()" style="flex:1;padding:12px;border-radius:12px;background:var(--warn);border:none;color:#000;font-size:14px;font-weight:600;cursor:pointer">Reset</button>
+        </div>
+    </div>
+</div>
+
+<!-- Clear History Confirm -->
+<div id="clearHistoryOverlay" style="display:none;position:fixed;inset:0;z-index:9700;background:rgba(0,0,0,0.6);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:24px">
+    <div style="background:var(--surface);border-radius:20px;padding:24px;width:100%;max-width:320px;border:1px solid var(--border);box-shadow:0 20px 60px rgba(0,0,0,0.5)">
+        <div style="width:48px;height:48px;border-radius:50%;background:rgba(255,23,68,0.12);display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
+            <i class="fas fa-trash" style="font-size:20px;color:var(--danger)"></i>
+        </div>
+        <div style="text-align:center;margin-bottom:8px;font-size:16px;font-weight:700;color:var(--text)">History delete karein?</div>
+        <div style="text-align:center;font-size:13px;color:var(--muted);margin-bottom:24px;line-height:1.5">Saari scan history hamesha ke liye delete ho jayegi</div>
+        <div style="display:flex;gap:10px">
+            <button onclick="cancelClearHistory()" style="flex:1;padding:12px;border-radius:12px;background:var(--card);border:1px solid var(--border);color:var(--text);font-size:14px;font-weight:600;cursor:pointer">Cancel</button>
+            <button onclick="doClearHistory()" style="flex:1;padding:12px;border-radius:12px;background:var(--danger);border:none;color:#fff;font-size:14px;font-weight:600;cursor:pointer">Delete</button>
+        </div>
+    </div>
+</div>
+</body>
+</html>
