@@ -83,3 +83,4 @@ document.getElementById('calcDisplay').addEventListener('keydown', function(e) {
 document.getElementById('priceCalcOverlay').addEventListener('click', function(e) {
     if (e.target === this) closePriceCalc();
 });
+
