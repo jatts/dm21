@@ -6,6 +6,26 @@ window.refillCoins = () => window.gameBar && window.gameBar.refillCoins();
 window.setBarcode  = bc => lookupBarcode(bc);
 
 /* ═══════════════════════════════════════
+   SMARTWEBVIEW ADMOB BRIDGE
+   SmartWebView ke AdMob plugin se connect
+═══════════════════════════════════════ */
+window.addEventListener('load', function() {
+    // Banner ad auto show karo 2 second baad
+    setTimeout(function() {
+        if (window.AdMob) {
+            window.AdMob.showBanner();
+        }
+    }, 2000);
+
+    // Rewarded ad reward milne pe coins refill
+    if (window.AdMob) {
+        window.AdMob.onUserEarnedReward = function(reward) {
+            if (window.gameBar) window.gameBar.refillCoins();
+        };
+    }
+});
+
+/* ═══════════════════════════════════════
    BOOT — sabse aakhir mein run hota hai
 ═══════════════════════════════════════ */
 updateGameBar();
