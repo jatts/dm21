@@ -114,16 +114,11 @@ window.gameBar = {
     },
     // watchAd: settings.js is ko call karta hai
     watchAd() {
-        // SmartWebView AdMob (primary)
         if (window.AdMob && typeof window.AdMob.showRewarded === 'function') {
             window.AdMob.showRewarded();
-        }
-        // AI2 App Inventor (fallback)
-        else if (window.AppInventor) {
+        } else if (window.AppInventor) {
             window.AppInventor.setWebViewString('show_ad');
-        }
-        // Direct refill agar koi ad network nahi
-        else {
+        } else {
             this.refillCoins();
         }
     }
