@@ -490,7 +490,7 @@
             backdrop-filter: blur(4px);
             align-items: flex-end;
             justify-content: center;
-            padding-bottom: 62px; /* banner ad height se upar */
+            padding-bottom: 65px !important; /* banner ad height se upar */
         }
         #priceCalcOverlay.open { display: flex; }
 
@@ -501,9 +501,11 @@
             border-bottom: none;
             width: 100%;
             max-width: 480px;
-            padding: 10px 14px 16px;
+            padding: 8px 12px 12px;
             box-shadow: 0 -8px 40px rgba(0,0,0,0.4);
             animation: sheetUp .25s ease;
+            max-height: 75vh;
+            overflow-y: auto;
         }
         @keyframes sheetUp {
             from { transform: translateY(100%); opacity: 0; }
