@@ -74,13 +74,15 @@ document.getElementById('calcClearBtn').addEventListener('click', () => {
 document.getElementById('calcEnterBtn').addEventListener('click', calcEnter);
 document.getElementById('calcCloseBtn').addEventListener('click', closePriceCalc);
 
-// Enter key se bhi calculate ho
-document.getElementById('calcDisplay').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') { e.preventDefault(); calcEnter(); }
+// Enter key (physical keyboard) se calculate ho
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && document.getElementById('priceCalcOverlay').classList.contains('open')) {
+        e.preventDefault();
+        calcEnter();
+    }
 });
 
 // Tap outside sheet to close
 document.getElementById('priceCalcOverlay').addEventListener('click', function(e) {
     if (e.target === this) closePriceCalc();
 });
-
