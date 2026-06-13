@@ -174,8 +174,18 @@ window.cancelClearHistory = function() {
    AD / COINS
 ═══════════════════════════════════════ */
 function watchAd() {
-    if (window.AppInventor) window.AppInventor.setWebViewString('show_ad');
-    else window.gameBar.refillCoins();
+    // SmartWebView AdMob (primary)
+    if (window.AdMob && typeof window.AdMob.showRewarded === 'function') {
+        window.AdMob.showRewarded();
+    }
+    // AI2 App Inventor (fallback)
+    else if (window.AppInventor) {
+        window.AppInventor.setWebViewString('show_ad');
+    }
+    // Direct refill agar koi ad network nahi (testing)
+    else {
+        window.gameBar && window.gameBar.refillCoins();
+    }
 }
 document.getElementById('watchAdBtn').addEventListener('click', watchAd);
 document.getElementById('settingWatchAd').addEventListener('click', watchAd);
