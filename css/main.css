@@ -490,18 +490,18 @@
             backdrop-filter: blur(4px);
             align-items: flex-end;
             justify-content: center;
-            padding-bottom: 0;
+            padding-bottom: 62px; /* banner ad height se upar */
         }
         #priceCalcOverlay.open { display: flex; }
 
         .calc-sheet {
             background: var(--surface);
-            border-radius: 24px 24px 0 0;
+            border-radius: 20px 20px 0 0;
             border: 1px solid var(--border);
             border-bottom: none;
             width: 100%;
             max-width: 480px;
-            padding: 14px 16px 24px;
+            padding: 10px 14px 16px;
             box-shadow: 0 -8px 40px rgba(0,0,0,0.4);
             animation: sheetUp .25s ease;
         }
@@ -564,15 +564,15 @@
         .calc-pad {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
+            gap: 6px;
         }
         .calc-key {
             background: var(--card);
             border: 1px solid var(--border);
-            border-radius: 14px;
-            height: 58px;
+            border-radius: 12px;
+            height: 46px;
             font-family: var(--font-mono);
-            font-size: 22px; font-weight: 700;
+            font-size: 20px; font-weight: 700;
             color: var(--text);
             cursor: pointer;
             display: flex; align-items: center; justify-content: center;
