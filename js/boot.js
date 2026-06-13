@@ -9,20 +9,32 @@ window.setBarcode  = bc => lookupBarcode(bc);
    SMARTWEBVIEW ADMOB BRIDGE
    SmartWebView ke AdMob plugin se connect
 ═══════════════════════════════════════ */
+
+// Rewarded ad complete hone pe coins refill
+// AdMobPlugin ye function call karta hai
+window.AdMob = window.AdMob || {};
+window.AdMob.onUserEarnedReward = function(reward) {
+    if (window.gameBar) {
+        window.gameBar.refillCoins();
+    }
+};
+
 window.addEventListener('load', function() {
     // Banner ad auto show karo 2 second baad
     setTimeout(function() {
-        if (window.AdMob) {
+        if (window.AdMob && typeof window.AdMob.showBanner === 'function') {
             window.AdMob.showBanner();
         }
     }, 2000);
 
-    // Rewarded ad reward milne pe coins refill
-    if (window.AdMob) {
-        window.AdMob.onUserEarnedReward = function(reward) {
-            if (window.gameBar) window.gameBar.refillCoins();
-        };
-    }
+    // AdMob load hone ke baad bhi onUserEarnedReward set karo
+    setTimeout(function() {
+        if (window.AdMob) {
+            window.AdMob.onUserEarnedReward = function(reward) {
+                if (window.gameBar) window.gameBar.refillCoins();
+            };
+        }
+    }, 3000);
 });
 
 /* ═══════════════════════════════════════
