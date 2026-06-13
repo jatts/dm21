@@ -10,30 +10,27 @@ window.setBarcode  = bc => lookupBarcode(bc);
    SmartWebView ke AdMob plugin se connect
 ═══════════════════════════════════════ */
 
-// Rewarded ad complete hone pe coins refill
-// AdMobPlugin ye function call karta hai
+// onUserEarnedReward pehle se define karo
+// AdMobPlugin.java ye call karta hai reward milne pe
 window.AdMob = window.AdMob || {};
 window.AdMob.onUserEarnedReward = function(reward) {
-    if (window.gameBar) {
-        window.gameBar.refillCoins();
-    }
+    if (window.gameBar) window.gameBar.refillCoins();
 };
 
 window.addEventListener('load', function() {
-    // Banner ad auto show karo 2 second baad
+    // Banner auto show 2s baad
     setTimeout(function() {
         if (window.AdMob && typeof window.AdMob.showBanner === 'function') {
             window.AdMob.showBanner();
         }
     }, 2000);
 
-    // AdMob load hone ke baad bhi onUserEarnedReward set karo
+    // Safety: 3s baad bhi set karo (AdMob inject hone ke baad)
     setTimeout(function() {
-        if (window.AdMob) {
-            window.AdMob.onUserEarnedReward = function(reward) {
-                if (window.gameBar) window.gameBar.refillCoins();
-            };
-        }
+        window.AdMob = window.AdMob || {};
+        window.AdMob.onUserEarnedReward = function(reward) {
+            if (window.gameBar) window.gameBar.refillCoins();
+        };
     }, 3000);
 });
 
