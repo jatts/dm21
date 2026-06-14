@@ -12,7 +12,9 @@ function openPriceCalc(pct, article) {
     calcVal     = '';
     document.getElementById('calcDisplay').value        = '';
     document.getElementById('calcPctBadge').textContent = `${Math.floor(pct)}%`;
-    document.getElementById('priceCalcOverlay').classList.add('open');
+    var _ov = document.getElementById('priceCalcOverlay');
+    _ov.style.display = 'flex'; // direct style - Android WebView ke liye
+    _ov.classList.add('open');
     // SmartWebView native banner hide karo taake calculator upar rahe
     if (window.AdMobInterface && typeof window.AdMobInterface.hideBannerAd === 'function') {
         window.AdMobInterface.hideBannerAd();
@@ -22,7 +24,9 @@ function openPriceCalc(pct, article) {
 }
 
 function closePriceCalc() {
-    document.getElementById('priceCalcOverlay').classList.remove('open');
+    var ov = document.getElementById('priceCalcOverlay');
+    ov.classList.remove('open');
+    ov.style.display = 'none'; // direct style - Android WebView ke liye safe
     // Banner wapis show karo
     if (window.AdMobInterface && typeof window.AdMobInterface.showBannerAd === 'function') {
         window.AdMobInterface.showBannerAd();
@@ -64,8 +68,8 @@ function calcEnter() {
     }
 
 
-    // Enter ke baad 150ms delay phir close (smooth feel + Android IME ke liye safe)
-    setTimeout(closePriceCalc, 150);
+    // 200ms delay - Android WebView mein smooth close ke liye
+    setTimeout(closePriceCalc, 200);
 }
 
 // Numpad key presses
