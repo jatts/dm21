@@ -15,35 +15,60 @@ function validateInput(raw) {
 ═══════════════════════════════════════ */
 let ttsQueue = [], ttsBusy = false;
 
-function tts(text, lang='ur-PK') {
+// TTS voices preload — page load pe
+var _ttsVoicesLoaded = false;
+function _loadTtsVoices() {
+    var v = speechSynthesis.getVoices();
+    if (v.length > 0) { _ttsVoicesLoaded = true; return v; }
+    return [];
+}
+if ('speechSynthesis' in window) {
+    speechSynthesis.addEventListener('voiceschanged', function() {
+        _ttsVoicesLoaded = true;
+    });
+    // Pehle se try karo
+    _loadTtsVoices();
+}
+
+function tts(text, lang) {
+    lang = lang || 'ur-PK';
     if (!('speechSynthesis' in window)) return;
-    const voices = speechSynthesis.getVoices();
-    if (voices.length === 0) {
-        // Voices abhi load nahi huin — wait karo
-        speechSynthesis.addEventListener('voiceschanged', function onReady() {
-            speechSynthesis.removeEventListener('voiceschanged', onReady);
-            ttsQueue.push({text, lang});
-            if (!ttsBusy) runTts();
-        }, { once: true });
-        return;
-    }
-    ttsQueue.push({text, lang});
-    if (!ttsBusy) runTts();
+    // SmartWebView mein pehli baar voices nahi hoti
+    // Retry mechanism use karo
+    var trySpeak = function(attempts) {
+        attempts = attempts || 0;
+        var voices = speechSynthesis.getVoices();
+        if (voices.length === 0 && attempts < 6) {
+            setTimeout(function() { trySpeak(attempts + 1); }, 300);
+            return;
+        }
+        ttsQueue.push({text: text, lang: lang});
+        if (!ttsBusy) runTts();
+    };
+    trySpeak(0);
 }
 
 function runTts() {
-    if (!ttsQueue.length) { ttsBusy=false; return; }
+    if (!ttsQueue.length) { ttsBusy = false; return; }
     ttsBusy = true;
-    const {text, lang} = ttsQueue.shift();
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = lang;
-    // SmartWebView mein available ur voice prefer karo
-    const voices = speechSynthesis.getVoices();
-    const urVoice = voices.find(v => v.lang === 'ur-PK' || v.lang === 'ur');
-    if (urVoice && lang === 'ur-PK') u.voice = urVoice;
-    u.rate = 0.9;
-    u.onend = u.onerror = runTts;
-    speechSynthesis.speak(u);
+    var item = ttsQueue.shift();
+    var u = new SpeechSynthesisUtterance(item.text);
+    u.lang = item.lang;
+    u.rate = 0.85;
+    // ur-PK voice prefer karo agar available ho
+    var voices = speechSynthesis.getVoices();
+    var urVoice = null;
+    for (var i = 0; i < voices.length; i++) {
+        if (voices[i].lang === 'ur-PK' || voices[i].lang === 'ur') {
+            urVoice = voices[i]; break;
+        }
+    }
+    if (urVoice && item.lang === 'ur-PK') u.voice = urVoice;
+    u.onend = runTts;
+    u.onerror = function() { ttsBusy = false; runTts(); };
+    // SmartWebView workaround: cancel pehle karo
+    speechSynthesis.cancel();
+    setTimeout(function() { speechSynthesis.speak(u); }, 50);
 }
 
 /* ═══════════════════════════════════════
@@ -57,3 +82,4 @@ function showToast(msg, type='info', dur=2200) {
     clearTimeout(toastTimer);
     toastTimer = setTimeout(()=> t.classList.remove('show'), dur);
 }
+
