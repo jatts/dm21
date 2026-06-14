@@ -64,7 +64,8 @@ function calcEnter() {
     }
 
 
-    closePriceCalc();
+    // Enter ke baad 150ms delay phir close (smooth feel + Android IME ke liye safe)
+    setTimeout(closePriceCalc, 150);
 }
 
 // Numpad key presses
