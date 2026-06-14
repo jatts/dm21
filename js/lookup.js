@@ -189,4 +189,3 @@ function watchAd() {
 }
 document.getElementById('watchAdBtn').addEventListener('click', watchAd);
 document.getElementById('settingWatchAd').addEventListener('click', watchAd);
-
