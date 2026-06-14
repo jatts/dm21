@@ -13,10 +13,22 @@ function openPriceCalc(pct, article) {
     document.getElementById('calcDisplay').value        = '';
     document.getElementById('calcPctBadge').textContent = `${Math.floor(pct)}%`;
     document.getElementById('priceCalcOverlay').classList.add('open');
+    // SmartWebView native banner hide karo taake calculator upar rahe
+    if (window.AdMobInterface && typeof window.AdMobInterface.hideBannerAd === 'function') {
+        window.AdMobInterface.hideBannerAd();
+    } else if (window.AdMob && typeof window.AdMob.hideBanner === 'function') {
+        window.AdMob.hideBanner();
+    }
 }
 
 function closePriceCalc() {
     document.getElementById('priceCalcOverlay').classList.remove('open');
+    // Banner wapis show karo
+    if (window.AdMobInterface && typeof window.AdMobInterface.showBannerAd === 'function') {
+        window.AdMobInterface.showBannerAd();
+    } else if (window.AdMob && typeof window.AdMob.showBanner === 'function') {
+        window.AdMob.showBanner();
+    }
 }
 
 function calcUpdateDisplay() {
@@ -86,3 +98,4 @@ document.addEventListener('keydown', function(e) {
 document.getElementById('priceCalcOverlay').addEventListener('click', function(e) {
     if (e.target === this) closePriceCalc();
 });
+
