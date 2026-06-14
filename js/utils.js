@@ -52,10 +52,20 @@ function runTts() {
     if (!ttsQueue.length) { ttsBusy = false; return; }
     ttsBusy = true;
     var item = ttsQueue.shift();
+
+    // Method 1: SmartWebView native AndroidInterface TTS
+    if (window.AndroidInterface && typeof window.AndroidInterface.speakText === 'function') {
+        window.AndroidInterface.speakText(item.text, item.lang || 'ur-PK');
+        ttsBusy = false;
+        setTimeout(runTts, 800);
+        return;
+    }
+
+    // Method 2: Standard Web Speech API
+    if (!('speechSynthesis' in window)) { ttsBusy = false; return; }
     var u = new SpeechSynthesisUtterance(item.text);
-    u.lang = item.lang;
+    u.lang = item.lang || 'ur-PK';
     u.rate = 0.85;
-    // ur-PK voice prefer karo agar available ho
     var voices = speechSynthesis.getVoices();
     var urVoice = null;
     for (var i = 0; i < voices.length; i++) {
@@ -64,11 +74,13 @@ function runTts() {
         }
     }
     if (urVoice && item.lang === 'ur-PK') u.voice = urVoice;
-    u.onend = runTts;
+    u.onend = function() { ttsBusy = false; runTts(); };
     u.onerror = function() { ttsBusy = false; runTts(); };
-    // SmartWebView workaround: cancel pehle karo
     speechSynthesis.cancel();
-    setTimeout(function() { speechSynthesis.speak(u); }, 50);
+    setTimeout(function() {
+        try { speechSynthesis.speak(u); }
+        catch(e) { ttsBusy = false; runTts(); }
+    }, 100);
 }
 
 /* ═══════════════════════════════════════
