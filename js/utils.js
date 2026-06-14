@@ -31,21 +31,14 @@ if ('speechSynthesis' in window) {
 }
 
 function tts(text, lang) {
-    lang = lang || 'ur-PK';
+    lang = lang || 'en-US';
     if (!('speechSynthesis' in window)) return;
     // SmartWebView mein pehli baar voices nahi hoti
     // Retry mechanism use karo
-    var trySpeak = function(attempts) {
-        attempts = attempts || 0;
-        var voices = speechSynthesis.getVoices();
-        if (voices.length === 0 && attempts < 6) {
-            setTimeout(function() { trySpeak(attempts + 1); }, 300);
-            return;
-        }
-        ttsQueue.push({text: text, lang: lang});
-        if (!ttsBusy) runTts();
-    };
-    trySpeak(0);
+    // Android WebView mein voices wait karne ki zaroorat nahi
+    // directly queue mein dalo aur speak karo
+    ttsQueue.push({text: text, lang: lang});
+    if (!ttsBusy) runTts();
 }
 
 function runTts() {
@@ -55,32 +48,27 @@ function runTts() {
 
     // Method 1: SmartWebView native AndroidInterface TTS
     if (window.AndroidInterface && typeof window.AndroidInterface.speakText === 'function') {
-        window.AndroidInterface.speakText(item.text, item.lang || 'ur-PK');
+        window.AndroidInterface.speakText(item.text, item.lang || 'en-US');
         ttsBusy = false;
         setTimeout(runTts, 800);
         return;
     }
 
     // Method 2: Standard Web Speech API
+    // NOTE: Android WebView mein getVoices() empty array deta hai
+    // Isliye voice check skip karo - directly speak karo lang ke saath
     if (!('speechSynthesis' in window)) { ttsBusy = false; return; }
     var u = new SpeechSynthesisUtterance(item.text);
-    u.lang = item.lang || 'ur-PK';
-    u.rate = 0.85;
-    var voices = speechSynthesis.getVoices();
-    var urVoice = null;
-    for (var i = 0; i < voices.length; i++) {
-        if (voices[i].lang === 'ur-PK' || voices[i].lang === 'ur') {
-            urVoice = voices[i]; break;
-        }
-    }
-    if (urVoice && item.lang === 'ur-PK') u.voice = urVoice;
+    u.lang = item.lang || 'en-US';  // en-US Android WebView mein reliable hai
+    u.rate = 0.9;
+    u.volume = 1;
     u.onend = function() { ttsBusy = false; runTts(); };
     u.onerror = function() { ttsBusy = false; runTts(); };
     speechSynthesis.cancel();
     setTimeout(function() {
         try { speechSynthesis.speak(u); }
         catch(e) { ttsBusy = false; runTts(); }
-    }, 100);
+    }, 150);
 }
 
 /* ═══════════════════════════════════════
