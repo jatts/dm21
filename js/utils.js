@@ -82,4 +82,3 @@ function showToast(msg, type='info', dur=2200) {
     clearTimeout(toastTimer);
     toastTimer = setTimeout(()=> t.classList.remove('show'), dur);
 }
-
