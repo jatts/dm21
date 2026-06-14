@@ -129,8 +129,8 @@ function lookupBarcode(rawInput, searchMode) {
     ttsQueue.length = 0;
     speechSynthesis.cancel();
     ttsBusy = false;
-    if (speakPct   && pctDisplay  !== 'N/A') tts(pctDisplay);
-    if (speakPrice && discDisplay !== 'N/A') tts(discDisplay);
+    if (speakPct   && pctDisplay  !== 'N/A') tts(pctDisplay, 'en-US');
+    if (speakPrice && discDisplay !== 'N/A') tts(discDisplay, 'en-US');
 
     const entry = {
         Barcode:r.Barcode, Article:r.Article||'N/A',
