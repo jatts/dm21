@@ -12,9 +12,9 @@ function openPriceCalc(pct, article) {
     calcVal     = '';
     document.getElementById('calcDisplay').value        = '';
     document.getElementById('calcPctBadge').textContent = `${Math.floor(pct)}%`;
-    var _ov = document.getElementById('priceCalcOverlay');
-    _ov.style.display = 'flex'; // direct style - Android WebView ke liye
-    _ov.classList.add('open');
+    var _pcOv = document.getElementById('priceCalcOverlay');
+    _pcOv.style.setProperty('display', 'flex', 'important');
+    _pcOv.classList.add('open');
     // SmartWebView native banner hide karo taake calculator upar rahe
     if (window.AdMobInterface && typeof window.AdMobInterface.hideBannerAd === 'function') {
         window.AdMobInterface.hideBannerAd();
@@ -24,9 +24,9 @@ function openPriceCalc(pct, article) {
 }
 
 function closePriceCalc() {
-    var ov = document.getElementById('priceCalcOverlay');
-    ov.classList.remove('open');
-    ov.style.display = 'none'; // direct style - Android WebView ke liye safe
+    var _pcOv2 = document.getElementById('priceCalcOverlay');
+    _pcOv2.classList.remove('open');
+    _pcOv2.style.removeProperty('display');
     // Banner wapis show karo
     if (window.AdMobInterface && typeof window.AdMobInterface.showBannerAd === 'function') {
         window.AdMobInterface.showBannerAd();
@@ -68,8 +68,7 @@ function calcEnter() {
     }
 
 
-    // 200ms delay - Android WebView mein smooth close ke liye
-    setTimeout(closePriceCalc, 200);
+    setTimeout(function() { closePriceCalc(); }, 200);
 }
 
 // Numpad key presses
