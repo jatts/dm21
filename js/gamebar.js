@@ -136,12 +136,11 @@ function showRewardSuccess(newCoins) {
     var overlay = document.getElementById('rewardSuccessOverlay');
     var coinEl  = document.getElementById('rewardNewCoins');
     var cdEl    = document.getElementById('rewardCountdown');
-    if (!overlay) { console.warn('rewardSuccessOverlay not found'); return; }
+    if (!overlay) return;
 
-    // newCoins total coins hai — display mein total dikhao
     if (coinEl) coinEl.textContent = newCoins;
+    overlay.style.display = 'flex'; // direct style override - Android WebView ke liye
     overlay.classList.add('open');
-    overlay.style.display = 'flex'; // fallback agar CSS class kaam na kare
 
     // adPrompt hide karo
     var ap = document.getElementById('adPrompt');
@@ -166,7 +165,7 @@ function closeRewardSuccess() {
     var overlay = document.getElementById('rewardSuccessOverlay');
     if (overlay) {
         overlay.classList.remove('open');
-        overlay.style.display = 'none'; // fallback direct style reset
+        overlay.style.display = 'none'; // direct style reset
     }
 }
 
