@@ -139,8 +139,8 @@ function showRewardSuccess(newCoins) {
     if (!overlay) return;
 
     if (coinEl) coinEl.textContent = newCoins;
-    overlay.style.display = 'flex'; // direct style override - Android WebView ke liye
     overlay.classList.add('open');
+    overlay.style.setProperty('display', 'flex', 'important');
 
     // adPrompt hide karo
     var ap = document.getElementById('adPrompt');
@@ -163,10 +163,7 @@ function showRewardSuccess(newCoins) {
 function closeRewardSuccess() {
     if (_rewardTimer) { clearInterval(_rewardTimer); _rewardTimer = null; }
     var overlay = document.getElementById('rewardSuccessOverlay');
-    if (overlay) {
-        overlay.classList.remove('open');
-        overlay.style.display = 'none'; // direct style reset
-    }
+    if (overlay) { overlay.classList.remove('open'); overlay.style.removeProperty('display'); }
 }
 
 window.closeRewardSuccess = closeRewardSuccess;
