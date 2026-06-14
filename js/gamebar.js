@@ -136,10 +136,12 @@ function showRewardSuccess(newCoins) {
     var overlay = document.getElementById('rewardSuccessOverlay');
     var coinEl  = document.getElementById('rewardNewCoins');
     var cdEl    = document.getElementById('rewardCountdown');
-    if (!overlay) return;
+    if (!overlay) { console.warn('rewardSuccessOverlay not found'); return; }
 
+    // newCoins total coins hai — display mein total dikhao
     if (coinEl) coinEl.textContent = newCoins;
     overlay.classList.add('open');
+    overlay.style.display = 'flex'; // fallback agar CSS class kaam na kare
 
     // adPrompt hide karo
     var ap = document.getElementById('adPrompt');
@@ -162,7 +164,10 @@ function showRewardSuccess(newCoins) {
 function closeRewardSuccess() {
     if (_rewardTimer) { clearInterval(_rewardTimer); _rewardTimer = null; }
     var overlay = document.getElementById('rewardSuccessOverlay');
-    if (overlay) overlay.classList.remove('open');
+    if (overlay) {
+        overlay.classList.remove('open');
+        overlay.style.display = 'none'; // fallback direct style reset
+    }
 }
 
 window.closeRewardSuccess = closeRewardSuccess;
