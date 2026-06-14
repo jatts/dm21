@@ -94,6 +94,23 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
+// SmartWebView on-screen keyboard Done button
+// keydown nahi bhejta — input event + value check
+document.getElementById('calcDisplay').addEventListener('keyup', function(e) {
+    if (e.key === 'Enter' || e.keyCode === 13) {
+        e.preventDefault();
+        calcEnter();
+    }
+});
+
+// Android IME Done action - some WebViews use this
+document.getElementById('calcDisplay').addEventListener('change', function() {
+    // Input field lose focus karne pe (Done press se) calcEnter call
+    if (document.getElementById('priceCalcOverlay').classList.contains('open') && calcVal) {
+        calcEnter();
+    }
+});
+
 // Tap outside sheet to close
 document.getElementById('priceCalcOverlay').addEventListener('click', function(e) {
     if (e.target === this) closePriceCalc();
