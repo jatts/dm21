@@ -10,28 +10,35 @@ window.setBarcode  = bc => lookupBarcode(bc);
    SmartWebView ke AdMob plugin se connect
 ═══════════════════════════════════════ */
 
-// onUserEarnedReward pehle se define karo
-// AdMobPlugin.java ye call karta hai reward milne pe
-window.AdMob = window.AdMob || {};
-window.AdMob.onUserEarnedReward = function(reward) {
-    if (window.gameBar) window.gameBar.refillCoins();
-};
+// IMPORTANT: window.AdMob = {} mat karo — AdMobPlugin.java
+// onPageFinished pe apna AdMob object inject karta hai
+// Hum sirf reward callback define karte hain
+// AdMobPlugin inject hone ke BAAD
 
-window.addEventListener('load', function() {
-    // Banner auto show 2s baad
-    setTimeout(function() {
-        if (window.AdMob && typeof window.AdMob.showBanner === 'function') {
-            window.AdMob.showBanner();
-        }
-    }, 2000);
-
-    // Safety: 3s baad bhi set karo (AdMob inject hone ke baad)
-    setTimeout(function() {
-        window.AdMob = window.AdMob || {};
+function _setupAdMobReward() {
+    if (window.AdMob) {
+        // AdMob already inject ho gaya — reward callback set karo
         window.AdMob.onUserEarnedReward = function(reward) {
             if (window.gameBar) window.gameBar.refillCoins();
         };
-    }, 3000);
+        return true;
+    }
+    return false;
+}
+
+window.addEventListener('load', function() {
+    // AdMob inject hone ka wait karo (page load ke baad hota hai)
+    var attempts = 0;
+    var adSetupInterval = setInterval(function() {
+        attempts++;
+        if (_setupAdMobReward() || attempts >= 20) {
+            clearInterval(adSetupInterval);
+            // Banner bhi show karo jab ready ho
+            if (window.AdMob && typeof window.AdMob.showBanner === 'function') {
+                window.AdMob.showBanner();
+            }
+        }
+    }, 500); // har 500ms check karo, max 10 seconds
 });
 
 /* ═══════════════════════════════════════
