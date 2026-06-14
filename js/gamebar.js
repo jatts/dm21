@@ -95,10 +95,12 @@ window.gameBar = {
         coins = Math.min(coins + 30, MAX_COINS);
         var earned = (AppDB.getInt('coinsEarned', 0)) + 30;
         AppDB.set('coinsEarned', earned);
+        // Reward success card show karo
+        showRewardSuccess(coins);
         var aw = (AppDB.getInt('adsWatched', 0)) + 1;
         AppDB.set('adsWatched', aw);
         updateGameBar();
-        showToast('30 coins mile!', 'success');
+        // Toast hataya — reward card show hota hai
         tts('30 coins added', 'en-US');
         document.getElementById('adPrompt').style.display = 'none';
         // Sync ad event to GS immediately
@@ -123,3 +125,45 @@ window.gameBar = {
         }
     }
 };
+
+
+// ════════════════════════════════════════
+// REWARD SUCCESS CARD
+// ════════════════════════════════════════
+var _rewardTimer = null;
+
+function showRewardSuccess(newCoins) {
+    var overlay = document.getElementById('rewardSuccessOverlay');
+    var coinEl  = document.getElementById('rewardNewCoins');
+    var cdEl    = document.getElementById('rewardCountdown');
+    if (!overlay) return;
+
+    if (coinEl) coinEl.textContent = newCoins;
+    overlay.classList.add('open');
+
+    // adPrompt hide karo
+    var ap = document.getElementById('adPrompt');
+    if (ap) ap.style.display = 'none';
+
+    // Countdown 3 seconds
+    var count = 3;
+    if (cdEl) cdEl.textContent = count;
+    if (_rewardTimer) clearInterval(_rewardTimer);
+    _rewardTimer = setInterval(function() {
+        count--;
+        if (cdEl) cdEl.textContent = count;
+        if (count <= 0) {
+            clearInterval(_rewardTimer);
+            closeRewardSuccess();
+        }
+    }, 1000);
+}
+
+function closeRewardSuccess() {
+    if (_rewardTimer) { clearInterval(_rewardTimer); _rewardTimer = null; }
+    var overlay = document.getElementById('rewardSuccessOverlay');
+    if (overlay) overlay.classList.remove('open');
+}
+
+window.closeRewardSuccess = closeRewardSuccess;
+window.showRewardSuccess  = showRewardSuccess;
