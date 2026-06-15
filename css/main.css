@@ -61,16 +61,12 @@
 
         /* ───── GAMEBAR ───── */
         #gamebar-wrap {
-            height: calc(var(--bar-h) + env(safe-area-inset-top));
-            padding-top: env(safe-area-inset-top);
             flex-shrink: 0;
             background: linear-gradient(90deg, #0d1117 0%, #131929 50%, #0d1117 100%);
             border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
-            padding-left: 16px;
-            padding-right: 16px;
-            padding-bottom: 0;
+            padding: 0 16px;
             gap: 10px;
             z-index: 100;
         }
