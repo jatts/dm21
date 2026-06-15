@@ -73,6 +73,5 @@
             display: flex;
             flex-direction: column;
 
-            /* Push content away from status bar on notch phones */
-            padding-top: var(--safe-top);
+            /* padding-top gamebar-wrap pe hai, body pe nahi */
         }
