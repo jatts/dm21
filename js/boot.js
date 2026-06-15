@@ -1,4 +1,43 @@
 /* ═══════════════════════════════════════
+   STATUS BAR FIX — SmartWebView
+   SmartWebView mein env(safe-area-inset-top) kaam nahi karta
+   JS se gamebar ki height adjust karo
+═══════════════════════════════════════ */
+(function() {
+    function applyStatusBarPadding(px) {
+        var gb = document.getElementById('gamebar-wrap');
+        if (!gb) return;
+        px = Math.max(0, Math.min(px, 80)); // 0-80px range
+        gb.style.paddingTop = px + 'px';
+        gb.style.height = (58 + px) + 'px';
+    }
+
+    // Method 1: SmartWebView Java se statusBarHeight milti hai
+    // Java: webView.evaluateJavascript("setStatusBarHeight(" + statusBarHeight + ")", null)
+    window.setStatusBarHeight = function(px) {
+        applyStatusBarPadding(parseInt(px) || 0);
+    };
+
+    // Method 2: AndroidInterface se try karo
+    if (window.AndroidInterface && typeof window.AndroidInterface.getStatusBarHeight === 'function') {
+        var h = parseInt(window.AndroidInterface.getStatusBarHeight()) || 0;
+        if (h > 0) { applyStatusBarPadding(h); return; }
+    }
+
+    // Method 3: Fallback — window.screen vs window.innerHeight difference
+    // Status bar height = screen height - available height
+    setTimeout(function() {
+        var gb = document.getElementById('gamebar-wrap');
+        if (!gb) return;
+        // Agar gamebar top position > 0 hai to gap hai
+        var rect = gb.getBoundingClientRect();
+        if (rect.top > 2) {
+            applyStatusBarPadding(Math.round(rect.top));
+        }
+    }, 100);
+})();
+
+/* ═══════════════════════════════════════
    AI2 BRIDGE
    App Inventor WebView ke liye functions
 ═══════════════════════════════════════ */
