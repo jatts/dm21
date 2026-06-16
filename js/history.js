@@ -1,14 +1,21 @@
 /* ═══════════════════════════════════════
    SCAN HISTORY
 ═══════════════════════════════════════ */
+// scanHistory: AppDB primary, sessionStorage backup
 let scanHistory = (() => {
-    try { return AppDB.getJSON('scanHistory', []); }
-    catch(e) { return []; }
+    try {
+        var fromDB = AppDB.getJSON('scanHistory', null);
+        if (fromDB && Array.isArray(fromDB) && fromDB.length > 0) return fromDB;
+        // Fallback: sessionStorage
+        var ss = sessionStorage.getItem('scanHistory');
+        if (ss) return JSON.parse(ss);
+        return [];
+    } catch(e) { return []; }
 })();
 
 function saveScanHistory() {
-    try { AppDB.setJSON('scanHistory', scanHistory.slice(0,200)); }
-    catch(e) {}
+    try { AppDB.setJSON('scanHistory', scanHistory.slice(0,200)); } catch(e) {}
+    try { sessionStorage.setItem('scanHistory', JSON.stringify(scanHistory.slice(0,200))); } catch(e) {}
 }
 
 function esc(s) {
