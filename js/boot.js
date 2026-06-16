@@ -54,30 +54,45 @@ window.setBarcode  = bc => lookupBarcode(bc);
 // Hum sirf reward callback define karte hain
 // AdMobPlugin inject hone ke BAAD
 
+/* ═══════════════════════════════════════
+   SMARTWEBVIEW ADMOB — ALL CALLBACKS
+   SmartWebView alag alag versions mein
+   alag callback names use karta hai
+═══════════════════════════════════════ */
+
+// Central reward handler
+function _onRewardEarned() {
+    if (window.gameBar) window.gameBar.refillCoins();
+}
+
+// SmartWebView v6+ callbacks
+window.onAdRewarded             = _onRewardEarned;
+window.onRewardedAdComplete     = _onRewardEarned;
+window.onRewardedVideoAdRewarded = _onRewardEarned;
+window.onUserEarnedReward       = _onRewardEarned;
+window.rewardUser               = _onRewardEarned;
+
+// window.AdMob object inject hone ka wait
 function _setupAdMobReward() {
     if (window.AdMob) {
-        // AdMob already inject ho gaya — reward callback set karo
-        window.AdMob.onUserEarnedReward = function(reward) {
-            if (window.gameBar) window.gameBar.refillCoins();
-        };
+        window.AdMob.onUserEarnedReward = _onRewardEarned;
+        window.AdMob.onRewarded         = _onRewardEarned;
         return true;
     }
     return false;
 }
 
 window.addEventListener('load', function() {
-    // AdMob inject hone ka wait karo (page load ke baad hota hai)
     var attempts = 0;
     var adSetupInterval = setInterval(function() {
         attempts++;
-        if (_setupAdMobReward() || attempts >= 20) {
+        if (_setupAdMobReward() || attempts >= 40) {
             clearInterval(adSetupInterval);
-            // Banner bhi show karo jab ready ho
             if (window.AdMob && typeof window.AdMob.showBanner === 'function') {
                 window.AdMob.showBanner();
             }
         }
-    }, 500); // har 500ms check karo, max 10 seconds
+    }, 500);
 });
 
 /* ═══════════════════════════════════════
