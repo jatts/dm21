@@ -1,11 +1,23 @@
 /* ═══════════════════════════════════════
    SEARCH PAGE
 ═══════════════════════════════════════ */
+// Text mein match highlight karo
+function highlightMatch(text, query) {
+    if (!query || !text) return esc(text || 'N/A');
+    var escaped = esc(text);
+    var escapedQ = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return escaped.replace(new RegExp('(' + escapedQ + ')', 'gi'),
+        '<mark style="background:rgba(0,229,255,0.25);color:var(--accent);border-radius:3px;padding:0 2px">$1</mark>');
+}
+
 function doSearch() {
     const raw = document.getElementById('searchInput').value;
     const v   = validateInput(raw);
     if (!v.ok) { showToast(v.msg, 'error'); return; }
     if (!db)   { showToast('Database load nahi hua', 'error'); return; }
+
+    // Keyboard band karo
+    document.getElementById('searchInput').blur();
 
     const rows = queryDB(
         `SELECT Barcode, Article, Percentage, OriginalPrice FROM sc
@@ -18,6 +30,8 @@ function doSearch() {
         wrap.innerHTML='<div class="no-results"><i class="fas fa-search-minus" style="font-size:28px;display:block;margin-bottom:8px;opacity:.3"></i>Koi result nahi mila</div>';
         return;
     }
+
+    const qDisplay = v.val; // highlight ke liye original query
     wrap.innerHTML = `
         <table class="result-table">
             <thead><tr>
@@ -28,14 +42,14 @@ function doSearch() {
                 const ok=!isNaN(pN)&&!isNaN(opN);
                 const disc=ok?Math.floor(opN*(1-pN/100)):null;
                 return `<tr onclick="fillAndScan('${esc(r.Barcode)}')">
-                    <td>${esc(r.Article||'N/A')}</td>
-                    <td style="color:var(--muted)">${esc(r.Barcode)}</td>
+                    <td>${highlightMatch(r.Article||'N/A', qDisplay)}</td>
+                    <td style="color:var(--muted)">${highlightMatch(r.Barcode, qDisplay)}</td>
                     <td><span class="badge-pct">${ok?Math.floor(pN)+'%':'N/A'}</span></td>
                     <td class="badge-price">${disc!==null?disc:'N/A'}</td>
                 </tr>`;
             }).join('')}</tbody>
         </table>`;
-    showToast(`${rows.length} results`, 'success');
+    showToast(`${rows.length} results mile`, 'success');
 }
 
 function fillAndScan(bc) {
@@ -53,7 +67,7 @@ document.getElementById('searchInput').addEventListener('keydown', e=>{
 // FIX: searchClearBtn ka handler missing tha — button HTML mein tha lekin kaam nahi karta tha
 document.getElementById('searchClearBtn').addEventListener('click', function() {
     var inp = document.getElementById('searchInput');
-    if (inp) { inp.value = ''; inp.focus(); }
+    if (inp) { inp.value = ''; inp.blur(); }
     var wrap = document.getElementById('searchResults');
     if (wrap) wrap.innerHTML = '<div class="empty-state"><i class="fas fa-search"></i>Search results yahan dikhengi</div>';
 });

@@ -54,7 +54,15 @@ function updateGameBar() {
 window.gameBar = {
     checkCoins() {
         if (coins <= 0) {
-            document.getElementById('adPrompt').style.display = 'block';
+            var ap = document.getElementById('adPrompt');
+            if (ap) ap.style.display = 'block';
+            updateAdPromptState();
+            // Shake animation
+            if (ap) {
+                ap.classList.remove('ap-shake');
+                void ap.offsetWidth;
+                ap.classList.add('ap-shake');
+            }
             return false;
         }
         return true;
@@ -73,8 +81,9 @@ window.gameBar = {
         setTimeout(() => el.classList.remove('pulse'), 400);
         if (calcLevel() > prevLv) {
             const nlv = calcLevel();
-            showToast('Level ' + nlv + ' mubarak ho!', 'info', 3000);
+            showToast('🎉 Level ' + nlv + ' mubarak ho!', 'info', 3000);
             tts('Level ' + nlv + ' achieved', 'en-US');
+            showLevelUpCelebration(nlv);
         }
         // Queue GS sync event
         gsQueueEvent('scan');
@@ -91,7 +100,11 @@ window.gameBar = {
         gsQueueEvent('searchCoin');
     },
     refillCoins() {
-        if (coins >= MAX_COINS) { showToast('Coins already max (' + MAX_COINS + ')!', 'warn'); return; }
+        if (coins >= MAX_COINS) {
+            showToast('✅ Aapke paas already max 90 coins hain!', 'warn', 3000);
+            updateAdPromptState();
+            return;
+        }
         coins = Math.min(coins + 30, MAX_COINS);
         var earned = (AppDB.getInt('coinsEarned', 0)) + 30;
         AppDB.set('coinsEarned', earned);
@@ -100,9 +113,9 @@ window.gameBar = {
         var aw = (AppDB.getInt('adsWatched', 0)) + 1;
         AppDB.set('adsWatched', aw);
         updateGameBar();
-        // Toast hataya — reward card show hota hai
         tts('30 coins added', 'en-US');
         document.getElementById('adPrompt').style.display = 'none';
+        updateAdPromptState();
         // Sync ad event to GS immediately
         gsQueueEvent('ad');
     },
@@ -139,8 +152,8 @@ function showRewardSuccess(newCoins) {
     if (!overlay) return;
 
     if (coinEl) coinEl.textContent = newCoins;
+    overlay.style.display = 'flex';
     overlay.classList.add('open');
-    overlay.style.setProperty('display', 'flex', 'important');
 
     // adPrompt hide karo
     var ap = document.getElementById('adPrompt');
@@ -163,8 +176,105 @@ function showRewardSuccess(newCoins) {
 function closeRewardSuccess() {
     if (_rewardTimer) { clearInterval(_rewardTimer); _rewardTimer = null; }
     var overlay = document.getElementById('rewardSuccessOverlay');
-    if (overlay) { overlay.classList.remove('open'); overlay.style.removeProperty('display'); }
+    if (overlay) { overlay.style.display = 'none'; overlay.classList.remove('open'); }
 }
 
 window.closeRewardSuccess = closeRewardSuccess;
 window.showRewardSuccess  = showRewardSuccess;
+
+/* ═══════════════════════════════════════
+   AD PROMPT STATE — max coins check
+═══════════════════════════════════════ */
+function updateAdPromptState() {
+    var btn = document.getElementById('watchAdBtn');
+    var settingBtn = document.getElementById('settingWatchAd');
+    var apMsg = document.getElementById('adPromptMsg');
+
+    if (coins >= MAX_COINS) {
+        // Max coins - button disable karo
+        if (btn) {
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+            btn.style.cursor = 'not-allowed';
+            btn.innerHTML = '<i class="fas fa-check-circle"></i> Coins Full! (90/90)';
+        }
+        if (settingBtn) {
+            settingBtn.disabled = true;
+            settingBtn.style.opacity = '0.5';
+            settingBtn.innerHTML = '<i class="fas fa-check-circle"></i> Max Coins (90/90)';
+        }
+        if (apMsg) apMsg.innerHTML = '<i class="fas fa-info-circle"></i> Aapke paas already max 90 coins hain!';
+    } else {
+        // Normal state
+        if (btn) {
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.style.cursor = 'pointer';
+            btn.innerHTML = '<i class="fas fa-play-circle"></i> 30 Coins کے لیے Ad دیکھیں';
+        }
+        if (settingBtn) {
+            settingBtn.disabled = false;
+            settingBtn.style.opacity = '1';
+            settingBtn.innerHTML = '<i class="fas fa-play-circle"></i> Ad Dekh Kar 30 Coins Kamao';
+        }
+        if (apMsg) apMsg.innerHTML = '<i class="fas fa-exclamation-triangle"></i> کوئی سکین باقی نہیں! Ad dekho aur 30 coins pao!';
+    }
+}
+window.updateAdPromptState = updateAdPromptState;
+
+/* ═══════════════════════════════════════
+   LEVEL UP CELEBRATION
+═══════════════════════════════════════ */
+function showLevelUpCelebration(lvl) {
+    // Existing overlay check
+    var old = document.getElementById('levelUpOverlay');
+    if (old) old.remove();
+
+    var overlay = document.createElement('div');
+    overlay.id = 'levelUpOverlay';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;pointer-events:none;';
+
+    overlay.innerHTML = `
+        <div style="
+            background:linear-gradient(135deg,#1a0a40,#0d2040);
+            border:2px solid rgba(124,77,255,0.6);
+            border-radius:28px;padding:36px 40px;text-align:center;
+            animation:lvlUpPop .5s cubic-bezier(.34,1.56,.64,1);
+            box-shadow:0 0 80px rgba(124,77,255,0.4),0 0 160px rgba(0,229,255,0.1);
+            pointer-events:all;
+        ">
+            <div style="font-size:56px;margin-bottom:8px;animation:lvlSpin 0.8s ease">⭐</div>
+            <div style="font-size:13px;color:rgba(255,255,255,0.5);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px">Level Up!</div>
+            <div style="font-size:48px;font-weight:900;font-family:var(--font-mono);
+                background:linear-gradient(135deg,#7c4dff,#00e5ff);
+                -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+                margin-bottom:4px">LVL ${lvl}</div>
+            <div style="font-size:14px;color:rgba(255,255,255,0.7)">Mubarak ho! 🎊</div>
+        </div>
+    `;
+
+    // Confetti dots
+    for (var i = 0; i < 18; i++) {
+        var dot = document.createElement('div');
+        var colors = ['#7c4dff','#00e5ff','#ffd600','#00e676','#ff4081'];
+        var color = colors[i % colors.length];
+        var size = (Math.random() * 10 + 6) + 'px';
+        var left = (Math.random() * 100) + '%';
+        var delay = (Math.random() * 0.5) + 's';
+        dot.style.cssText = `
+            position:fixed;top:-20px;left:${left};width:${size};height:${size};
+            background:${color};border-radius:50%;
+            animation:confettiFall 1.2s ${delay} ease-in forwards;
+            pointer-events:none;z-index:99998;
+        `;
+        document.body.appendChild(dot);
+        setTimeout(function(d){ d.remove(); }, 2000);
+    }
+
+    document.body.appendChild(overlay);
+    setTimeout(function() {
+        overlay.style.animation = 'lvlUpFadeOut .4s ease forwards';
+        setTimeout(function() { overlay.remove(); }, 400);
+    }, 2200);
+}
+window.showLevelUpCelebration = showLevelUpCelebration;

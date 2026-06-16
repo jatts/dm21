@@ -24,14 +24,19 @@
         if (isOffline) return;
         isOffline = true;
         if (overlay) { overlay.style.display = 'flex'; overlay.style.flexDirection = 'column'; }
-        if (chip) chip.textContent = 'Internet connection nahi hai';
+        if (chip) { chip.textContent = '❌ Internet nahi hai — Scan/Search kaam nahi karega'; chip.style.color = '#ff5252'; }
+        // App ke baaki parts disable nahi hote - sirf sync kaam nahi karta
     }
 
     function hideOffline() {
         isOffline = false;
         failCount = 0;
         if (overlay) overlay.style.display = 'none';
-        if (chip) chip.textContent = 'Connected \u2713';
+        if (chip) { chip.textContent = '✅ Connected'; chip.style.color = '#00e676'; }
+        // 3 sec baad chip reset
+        setTimeout(function() {
+            if (!isOffline && chip) { chip.textContent = ''; chip.style.color = ''; }
+        }, 3000);
     }
 
     function ping() {

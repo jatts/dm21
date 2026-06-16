@@ -33,10 +33,8 @@ if ('speechSynthesis' in window) {
 function tts(text, lang) {
     lang = lang || 'en-US';
     if (!('speechSynthesis' in window)) return;
-    // SmartWebView mein pehli baar voices nahi hoti
-    // Retry mechanism use karo
-    // Android WebView mein voices wait karne ki zaroorat nahi
-    // directly queue mein dalo aur speak karo
+    // Android WebView mein getVoices() hamesha empty array deta hai
+    // Isliye voices ka wait mat karo - directly queue mein dalo
     ttsQueue.push({text: text, lang: lang});
     if (!ttsBusy) runTts();
 }
@@ -55,11 +53,10 @@ function runTts() {
     }
 
     // Method 2: Standard Web Speech API
-    // NOTE: Android WebView mein getVoices() empty array deta hai
-    // Isliye voice check skip karo - directly speak karo lang ke saath
+    // Android WebView mein getVoices() kaam nahi karta - directly speak karo
     if (!('speechSynthesis' in window)) { ttsBusy = false; return; }
     var u = new SpeechSynthesisUtterance(item.text);
-    u.lang = item.lang || 'en-US';  // en-US Android WebView mein reliable hai
+    u.lang = item.lang || 'en-US';
     u.rate = 0.9;
     u.volume = 1;
     u.onend = function() { ttsBusy = false; runTts(); };
@@ -82,3 +79,51 @@ function showToast(msg, type='info', dur=2200) {
     clearTimeout(toastTimer);
     toastTimer = setTimeout(()=> t.classList.remove('show'), dur);
 }
+
+
+/* ═══════════════════════════════════════
+   RESULT CARD ANIMATION
+   Count-up flip animation when result aata hai
+═══════════════════════════════════════ */
+function animateValue(elId, finalVal) {
+    var el = document.getElementById(elId);
+    if (!el) return;
+
+    // Agar N/A ya -- hai to seedha set karo
+    if (finalVal === 'N/A' || finalVal === '--') {
+        el.textContent = finalVal;
+        el.classList.remove('result-pop');
+        return;
+    }
+
+    // Number extract karo (e.g. "30%" → 30, "1499" → 1499)
+    var suffix = finalVal.replace(/[0-9]/g, '');  // e.g. "%"
+    var target = parseInt(finalVal.replace(/[^0-9]/g, ''));
+    if (isNaN(target)) { el.textContent = finalVal; return; }
+
+    // Pop animation
+    el.classList.remove('result-pop');
+    void el.offsetWidth; // reflow
+    el.classList.add('result-pop');
+
+    // Count-up: 300ms duration
+    var start = 0;
+    var duration = 350;
+    var startTime = null;
+
+    function step(timestamp) {
+        if (!startTime) startTime = timestamp;
+        var progress = Math.min((timestamp - startTime) / duration, 1);
+        // Ease-out
+        var eased = 1 - Math.pow(1 - progress, 3);
+        var current = Math.floor(eased * target);
+        el.textContent = current + suffix;
+        if (progress < 1) {
+            requestAnimationFrame(step);
+        } else {
+            el.textContent = finalVal;
+        }
+    }
+    requestAnimationFrame(step);
+}
+

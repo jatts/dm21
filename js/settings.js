@@ -42,3 +42,11 @@ if (_session) {
     var _loggedEl = document.getElementById('settingLoggedInAs');
     if (_loggedEl) _loggedEl.textContent = (_session.name || '') + '  (' + (_session.playerId || '') + ')';
 }
+
+/* ═══════════════════════════════════════
+   APP VERSION INFO
+═══════════════════════════════════════ */
+(function() {
+    var verEl = document.getElementById('appVersionText');
+    if (verEl) verEl.textContent = 'v2.1.0';
+})();

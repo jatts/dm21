@@ -104,8 +104,9 @@ function lookupBarcode(rawInput, searchMode) {
     const origDisplay = hasPrice ? `${Math.floor(opN)}`        : 'N/A';
     const discDisplay = ok       ? `${disc}`                   : 'N/A';
 
-    document.getElementById('percentageValue').textContent = pctDisplay;
-    document.getElementById('afterPriceValue').textContent = discDisplay;
+    // Count-up animation for result cards
+    animateValue('percentageValue', pctDisplay);
+    animateValue('afterPriceValue', discDisplay);
 
     // Show/hide "Tap to enter price" hint on afterp card
     const calcHint   = document.getElementById('calcHint');
@@ -143,6 +144,7 @@ function lookupBarcode(rawInput, searchMode) {
 
     document.getElementById('barcodeInput').value = '';
     document.getElementById('adPrompt').style.display = 'none';
+    updateAdPromptState();
 }
 
 /* ═══════════════════════════════════════
