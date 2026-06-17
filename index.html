@@ -793,63 +793,24 @@
 
 <!-- 1. Storage layer (must be first — everything depends on AppDB) -->
 <script src="js/appdb.js"></script>
-
-<!-- 2. Scanner (camera, BarcodeDetector, torch, countdown) -->
-<script src="js/scanner.js"></script>
-
-<!-- 3. Game bar (coins, level, scans state) -->
-<script src="js/gamebar.js"></script>
-
-
-<!-- 5. Utilities (validateInput, TTS queue, showToast) -->
 <script src="js/utils.js"></script>
-
-<!-- 6. Navigation (showPage, page switching) -->
-<script src="js/navigation.js"></script>
-
-<!-- 7. Scan history (save, render, clear) -->
 <script src="js/history.js"></script>
-
-<!-- 8. Lookup engine (anti-cheat + barcode DB lookup) -->
+<script src="js/gamebar.js"></script>
 <script src="js/lookup.js"></script>
-
-<!-- 9. Search page -->
+<script src="js/scanner.js"></script>
 <script src="js/search.js"></script>
-
-<!-- 10. Stats page (achievements, ranks, updateStatsPage) -->
-<script src="js/stats.js"></script>
-
-<!-- 11. Price calculator overlay -->
 <script src="js/calculator.js"></script>
-
-<!-- 12. Theme (dark/light toggle) -->
+<script src="js/navigation.js"></script>
+<script src="js/stats.js"></script>
 <script src="js/theme.js"></script>
-
-<!-- 13. Settings page (beep, vibrate, reset, privacy, terms) -->
 <script src="js/settings.js"></script>
-
-<!-- 14. Avatar helpers (show/hide/upload to Drive) — must load before auth -->
 <script src="js/avatar.js"></script>
-
-<!-- 15. Auth (login, signup, session, GS Auth) -->
 <script src="js/auth.js"></script>
-
-<!-- 15b. Database — auth ke baad load (gsGetSession + GS_SCRIPT_URL depend karta hai) -->
 <script src="js/database.js"></script>
-
-<!-- 16. Sync (GS event queue, flush, sync status) -->
 <script src="js/sync.js"></script>
-
-<!-- 17. Player profile (load, edit name, join date) -->
 <script src="js/profile.js"></script>
-
-<!-- 18. Leaderboard (fetch, render, tabs, refresh) -->
 <script src="js/leaderboard.js"></script>
-
-<!-- 19. Connectivity monitor (online/offline overlay) -->
 <script src="js/connectivity.js"></script>
-
-<!-- 20. Boot (updateGameBar, renderHistory, initDatabase — runs last) -->
 <script src="js/boot.js"></script>
 
 
