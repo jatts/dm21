@@ -1,41 +1,46 @@
 /* ═══════════════════════════════════════
    SCAN HISTORY
+   SmartWebView mein localStorage/sessionStorage
+   blocked ho sakti hai - in-memory primary
+   AppDB string set karo (IndexedDB async)
 ═══════════════════════════════════════ */
-// scanHistory: AppDB primary, sessionStorage backup
-let scanHistory = (() => {
+
+// In-memory array - session ke andar hamesha kaam karega
+var scanHistory = [];
+
+// Load from AppDB on start (best-effort)
+(function loadHistory() {
     try {
-        var fromDB = AppDB.getJSON('scanHistory', null);
-        if (fromDB && Array.isArray(fromDB) && fromDB.length > 0) return fromDB;
-        // Fallback: sessionStorage
-        var ss = sessionStorage.getItem('scanHistory');
-        if (ss) return JSON.parse(ss);
-        return [];
-    } catch(e) { return []; }
+        var raw = AppDB.get('scanHistory');
+        if (raw) {
+            var parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) scanHistory = parsed;
+        }
+    } catch(e) { scanHistory = []; }
 })();
 
 function saveScanHistory() {
-    try { AppDB.setJSON('scanHistory', scanHistory.slice(0,200)); } catch(e) {}
-    try { sessionStorage.setItem('scanHistory', JSON.stringify(scanHistory.slice(0,200))); } catch(e) {}
+    try { AppDB.set('scanHistory', JSON.stringify(scanHistory.slice(0, 200))); } catch(e) {}
 }
 
 function esc(s) {
-    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return String(s||''). replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
 function renderHistory() {
-    const list = document.getElementById('historyList');
+    var list = document.getElementById('historyList');
+    if (!list) return;
     if (!scanHistory.length) {
-        list.innerHTML='<div class="empty-state"><i class="fas fa-barcode"></i>Koi scan nahi kiya abhi tak</div>';
+        list.innerHTML = '<div class="empty-state"><i class="fas fa-barcode"></i>Koi scan nahi kiya abhi tak</div>';
         return;
     }
-    // FIX: history item tap pe barcode re-scan hota hai (UX improvement)
-    list.innerHTML = scanHistory.map(r=>`
-        <div class="h-item" onclick="lookupBarcode('${esc(r.Barcode)}', true)" style="cursor:pointer" title="Tap to re-scan">
-            <span class="h-article">${esc(r.Article)}</span>
-            <span class="h-tag pct">${esc(r.pctDisplay)}</span>
-            <span class="h-tag orig">${esc(r.origDisplay)}</span>
-            <span class="h-tag disc">${esc(r.discDisplay)}</span>
-            <div class="h-barcode-row"><i class="fas fa-barcode" style="margin-right:5px;opacity:.4"></i>${esc(r.Barcode)}</div>
-        </div>`).join('');
+    list.innerHTML = scanHistory.map(function(r) {
+        return '<div class="h-item" onclick="lookupBarcode(\'' + esc(r.Barcode) + '\', true)" style="cursor:pointer" title="Tap to re-scan">' +
+            '<span class="h-article">' + esc(r.Article) + '</span>' +
+            '<span class="h-tag pct">' + esc(r.pctDisplay) + '</span>' +
+            '<span class="h-tag orig">' + esc(r.origDisplay) + '</span>' +
+            '<span class="h-tag disc">' + esc(r.discDisplay) + '</span>' +
+            '<div class="h-barcode-row"><i class="fas fa-barcode" style="margin-right:5px;opacity:.4"></i>' + esc(r.Barcode) + '</div>' +
+        '</div>';
+    }).join('');
 }
-
