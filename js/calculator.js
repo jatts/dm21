@@ -15,12 +15,8 @@ function openPriceCalc(pct, article) {
     var _ov = document.getElementById('priceCalcOverlay');
     _ov.style.display = 'flex';
     _ov.classList.add('open');
-    // SmartWebView native banner hide karo taake calculator upar rahe
-    if (window.AdMobInterface && typeof window.AdMobInterface.hideBannerAd === 'function') {
-        window.AdMobInterface.hideBannerAd();
-    } else if (window.AdMob && typeof window.AdMob.hideBanner === 'function') {
-        window.AdMob.hideBanner();
-    }
+    // Capacitor AdMob banner hide karo taake calculator upar rahe
+    if (typeof window.hideAdBanner === 'function') window.hideAdBanner();
 }
 
 function closePriceCalc() {
@@ -28,11 +24,7 @@ function closePriceCalc() {
     _ov2.style.display = 'none';
     _ov2.classList.remove('open');
     // Banner wapis show karo
-    if (window.AdMobInterface && typeof window.AdMobInterface.showBannerAd === 'function') {
-        window.AdMobInterface.showBannerAd();
-    } else if (window.AdMob && typeof window.AdMob.showBanner === 'function') {
-        window.AdMob.showBanner();
-    }
+    if (typeof window.showAdBanner === 'function') window.showAdBanner();
 }
 
 function calcUpdateDisplay() {
@@ -45,29 +37,33 @@ function calcEnter() {
     const price = parseFloat(calcVal);
     if (isNaN(price) || price <= 0) { showToast('Valid price likhein', 'error'); return; }
 
-    const disc  = Math.floor(price * (1 - calcPct/100));
-    const saved = Math.floor(price - disc);
+    try {
+        const disc  = Math.floor(price * (1 - calcPct/100));
+        const saved = Math.floor(price - disc);
 
-    // Update result cards
-    document.getElementById('afterPriceValue').textContent = `${disc}`;
+        // Update result cards
+        document.getElementById('afterPriceValue').textContent = `${disc}`;
 
-    // TTS
-    const speakPct   = document.getElementById('togglePercentage').checked;
-    const speakPrice = document.getElementById('toggleAfterPrice').checked;
-    ttsQueue.length = 0; speechSynthesis.cancel(); ttsBusy = false;
-    if (speakPct)   tts(`${Math.floor(calcPct)}%`);
-    if (speakPrice) tts(`${disc}`);
+        // TTS
+        const speakPct   = document.getElementById('togglePercentage').checked;
+        const speakPrice = document.getElementById('toggleAfterPrice').checked;
+        ttsQueue.length = 0; speechSynthesis.cancel(); ttsBusy = false;
+        if (speakPct)   tts(`${Math.floor(calcPct)}%`);
+        if (speakPrice) tts(`${disc}`);
 
-    // Update latest history entry with price
-    if (scanHistory.length > 0 && scanHistory[0].discDisplay === 'N/A') {
-        scanHistory[0].origDisplay = `${Math.floor(price)}`;
-        scanHistory[0].discDisplay = `${disc}`;
-        scanHistory[0].savings     = saved;
-        saveScanHistory();
-        renderHistory();
+        // Update latest history entry with price
+        if (typeof scanHistory !== 'undefined' && scanHistory.length > 0 && scanHistory[0].discDisplay === 'N/A') {
+            scanHistory[0].origDisplay = `${Math.floor(price)}`;
+            scanHistory[0].discDisplay = `${disc}`;
+            scanHistory[0].savings     = saved;
+            saveScanHistory();
+            renderHistory();
+        }
+    } catch (e) {
+        console.warn('calcEnter post-processing error:', e);
     }
 
-
+    // Yeh hamesha chalega chahe upar kuch bhi fail ho jaye
     setTimeout(function(){ closePriceCalc(); }, 200);
 }
 
