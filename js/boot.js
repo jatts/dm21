@@ -1,40 +1,58 @@
 /* ═══════════════════════════════════════
-   STATUS BAR FIX — SmartWebView
-   SmartWebView mein env(safe-area-inset-top) kaam nahi karta
-   JS se gamebar ki height adjust karo
+   STATUS BAR FIX — CapacitorJS
+   Capacitor @capacitor/status-bar plugin se
+   asal status bar height milti hai.
+   Fallback: getBoundingClientRect detection
 ═══════════════════════════════════════ */
 (function() {
     function applyStatusBarPadding(px) {
         var gb = document.getElementById('gamebar-wrap');
         if (!gb) return;
-        px = Math.max(0, Math.min(px, 80)); // 0-80px range
+        px = Math.max(0, Math.min(px, 80)); // 0-80px range safety
         gb.style.paddingTop = px + 'px';
         gb.style.height = (58 + px) + 'px';
     }
 
-    // Method 1: SmartWebView Java se statusBarHeight milti hai
-    // Java: webView.evaluateJavascript("setStatusBarHeight(" + statusBarHeight + ")", null)
-    window.setStatusBarHeight = function(px) {
-        applyStatusBarPadding(parseInt(px) || 0);
-    };
-
-    // Method 2: AndroidInterface se try karo
-    if (window.AndroidInterface && typeof window.AndroidInterface.getStatusBarHeight === 'function') {
-        var h = parseInt(window.AndroidInterface.getStatusBarHeight()) || 0;
-        if (h > 0) { applyStatusBarPadding(h); return; }
+    function trySetupStatusBar() {
+        if (window.CapStatusBar) {
+            // Capacitor StatusBar plugin se overlay disable karo
+            // taake WebView content status bar ke neeche se shuru ho
+            try {
+                window.CapStatusBar.setOverlaysWebView({ overlay: false });
+            } catch (e) {}
+            return true;
+        }
+        return false;
     }
 
-    // Method 3: Fallback — window.screen vs window.innerHeight difference
-    // Status bar height = screen height - available height
+    // Plugins load hone ka wait karo
+    if (!trySetupStatusBar()) {
+        window.addEventListener('capacitorPluginsReady', trySetupStatusBar);
+    }
+
+    // Fallback: agar overlay false set bhi ho jaye,
+    // safe-area-inset-top Capacitor mein sahi kaam karta hai
+    function applySafeArea() {
+        var gb = document.getElementById('gamebar-wrap');
+        if (!gb) return;
+        gb.style.paddingTop = 'env(safe-area-inset-top, 0px)';
+        gb.style.height = 'calc(58px + env(safe-area-inset-top, 0px))';
+    }
+    applySafeArea();
+
+    // Extra fallback: agar env() bhi 0 aaye (rare), rect check karo
     setTimeout(function() {
         var gb = document.getElementById('gamebar-wrap');
         if (!gb) return;
-        // Agar gamebar top position > 0 hai to gap hai
         var rect = gb.getBoundingClientRect();
-        if (rect.top > 2) {
-            applyStatusBarPadding(Math.round(rect.top));
+        if (rect.top < 2) {
+            // env() kaam nahi kar raha — manual estimate (status bar ~24-32px)
+            var estimate = window.Capacitor && window.Capacitor.getPlatform && window.Capacitor.getPlatform() === 'android' ? 28 : 0;
+            if (estimate > 0) applyStatusBarPadding(estimate);
         }
-    }, 100);
+    }, 300);
+
+    window.setStatusBarHeight = function(px) { applyStatusBarPadding(parseInt(px) || 0); };
 })();
 
 /* ═══════════════════════════════════════
@@ -45,19 +63,8 @@ window.refillCoins = () => window.gameBar && window.gameBar.refillCoins();
 window.setBarcode  = bc => lookupBarcode(bc);
 
 /* ═══════════════════════════════════════
-   SMARTWEBVIEW ADMOB BRIDGE
-   SmartWebView ke AdMob plugin se connect
-═══════════════════════════════════════ */
-
-// IMPORTANT: window.AdMob = {} mat karo — AdMobPlugin.java
-// onPageFinished pe apna AdMob object inject karta hai
-// Hum sirf reward callback define karte hain
-// AdMobPlugin inject hone ke BAAD
-
-/* ═══════════════════════════════════════
-   SMARTWEBVIEW ADMOB — ALL CALLBACKS
-   SmartWebView alag alag versions mein
-   alag callback names use karta hai
+   CAPACITOR ADMOB BRIDGE
+   @capacitor-community/admob plugin se reward ad
 ═══════════════════════════════════════ */
 
 // Central reward handler
@@ -65,35 +72,76 @@ function _onRewardEarned() {
     if (window.gameBar) window.gameBar.refillCoins();
 }
 
-// SmartWebView v6+ callbacks
-window.onAdRewarded             = _onRewardEarned;
-window.onRewardedAdComplete     = _onRewardEarned;
-window.onRewardedVideoAdRewarded = _onRewardEarned;
-window.onUserEarnedReward       = _onRewardEarned;
-window.rewardUser               = _onRewardEarned;
+// Test Ad Unit IDs (Google ke official test IDs)
+// Production mein inhe apni asli Ad Unit ID se replace karo
+var AD_UNIT_REWARDED = 'ca-app-pub-3940256099942544/5224354917'; // Android test rewarded
+var AD_UNIT_BANNER    = 'ca-app-pub-3940256099942544/6300978111'; // Android test banner
 
-// window.AdMob object inject hone ka wait
-function _setupAdMobReward() {
-    if (window.AdMob) {
-        window.AdMob.onUserEarnedReward = _onRewardEarned;
-        window.AdMob.onRewarded         = _onRewardEarned;
+var _rewardListenersAttached = false;
+
+function _setupAdMobListeners() {
+    if (!window.CapAdMob || _rewardListenersAttached) return false;
+    var AdMob = window.CapAdMob;
+
+    try {
+        AdMob.addListener('onRewardedVideoAdReward', function (reward) {
+            _onRewardEarned();
+        });
+        AdMob.addListener('onRewardedVideoAdFailedToLoad', function (err) {
+            console.warn('Rewarded ad failed to load:', err);
+            showToast && showToast('Ad load nahi hui, dobara try karein', 'error');
+        });
+        _rewardListenersAttached = true;
         return true;
+    } catch (e) {
+        console.warn('AdMob listener setup failed:', e);
+        return false;
     }
-    return false;
 }
 
-window.addEventListener('load', function() {
-    var attempts = 0;
-    var adSetupInterval = setInterval(function() {
-        attempts++;
-        if (_setupAdMobReward() || attempts >= 40) {
-            clearInterval(adSetupInterval);
-            if (window.AdMob && typeof window.AdMob.showBanner === 'function') {
-                window.AdMob.showBanner();
-            }
-        }
-    }, 500);
+// Reward ad load + show karo
+window.showRewardedAd = async function () {
+    if (!window.CapAdMob) {
+        showToast && showToast('Ad system abhi taiyaar nahi', 'warn');
+        return;
+    }
+    _setupAdMobListeners();
+    try {
+        await window.CapAdMob.prepareRewardVideoAd({ adId: AD_UNIT_REWARDED });
+        await window.CapAdMob.showRewardVideoAd();
+    } catch (e) {
+        console.warn('Rewarded ad show failed:', e);
+        showToast && showToast('Ad show nahi ho saki', 'error');
+    }
+};
+
+// Banner show/hide helpers (calculator open/close ke liye use hote hain)
+window.showAdBanner = async function () {
+    if (!window.CapAdMob) return;
+    try {
+        await window.CapAdMob.showBanner({
+            adId: AD_UNIT_BANNER,
+            adSize: 'BANNER',
+            position: 'BOTTOM_CENTER',
+            isTesting: true
+        });
+    } catch (e) {}
+};
+window.hideAdBanner = async function () {
+    if (!window.CapAdMob) return;
+    try { await window.CapAdMob.hideBanner(); } catch (e) {}
+};
+
+window.addEventListener('capacitorPluginsReady', function () {
+    _setupAdMobListeners();
+    window.showAdBanner();
 });
+
+// Agar plugins already ready hain (race condition safety)
+if (window.__capacitorReady) {
+    _setupAdMobListeners();
+    window.showAdBanner();
+}
 
 /* ═══════════════════════════════════════
    BOOT — sabse aakhir mein run hota hai
