@@ -44,7 +44,25 @@ function runTts() {
     ttsBusy = true;
     var item = ttsQueue.shift();
 
-    // Method 1: SmartWebView native AndroidInterface TTS
+    // Method 1: CapacitorJS native TTS plugin (sab se reliable — Android System TTS use karta hai)
+    if (window.CapTTS && typeof window.CapTTS.speak === 'function') {
+        window.CapTTS.speak({
+            text: item.text,
+            lang: item.lang || 'en-US',
+            rate: 1.0,
+            volume: 1.0,
+            category: 'ambient'
+        }).then(function() {
+            ttsBusy = false;
+            runTts();
+        }).catch(function() {
+            ttsBusy = false;
+            runTts();
+        });
+        return;
+    }
+
+    // Method 2: SmartWebView native AndroidInterface TTS (agar SmartWebView build hai)
     if (window.AndroidInterface && typeof window.AndroidInterface.speakText === 'function') {
         window.AndroidInterface.speakText(item.text, item.lang || 'en-US');
         ttsBusy = false;
@@ -52,8 +70,8 @@ function runTts() {
         return;
     }
 
-    // Method 2: Standard Web Speech API
-    // Android WebView mein getVoices() kaam nahi karta - directly speak karo
+    // Method 3: Standard Web Speech API (browser fallback — Android WebView mein
+    // yeh aksar silently fail hoti hai kyunki Android System TTS se connect nahi hoti)
     if (!('speechSynthesis' in window)) { ttsBusy = false; return; }
     var u = new SpeechSynthesisUtterance(item.text);
     u.lang = item.lang || 'en-US';
@@ -67,6 +85,12 @@ function runTts() {
         catch(e) { ttsBusy = false; runTts(); }
     }, 150);
 }
+
+// Capacitor TTS plugin baad mein load ho sakta hai (async import) —
+// agar queue mein kuch pending hai to dobara try karo jab plugin ready ho
+window.addEventListener('capacitorPluginsReady', function() {
+    if (window.CapTTS && ttsQueue.length && !ttsBusy) runTts();
+});
 
 /* ═══════════════════════════════════════
    TOAST
