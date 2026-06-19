@@ -57,21 +57,28 @@ function lookupBarcode(rawInput, searchMode) {
 
     if (!rows.length) {
         // Toast
-        showToast('Barcode not found', 'warn');
+        showToast('Barcode not found: ' + v.val, 'warn');
 
-        // Voice — cancel any running TTS then speak
-        speechSynthesis.cancel();
+        // TTS
         ttsQueue.length = 0;
+        if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel();
         ttsBusy = false;
         tts('Not found', 'en-US');
 
-        // Clear cards — reset to blank dashes
+        // Clear cards
         document.getElementById('percentageValue').textContent = '--';
         document.getElementById('afterPriceValue').textContent = '--';
-        const calcHint = document.getElementById('calcHint');
-        const apCard   = document.getElementById('afterPriceCard');
-        if (calcHint) calcHint.style.display = 'none';
-        if (apCard)   apCard.style.cursor = 'default';
+        var calcHint2 = document.getElementById('calcHint');
+        var apCard2   = document.getElementById('afterPriceCard');
+        if (calcHint2) calcHint2.style.display = 'none';
+        if (apCard2)   apCard2.style.cursor = 'default';
+
+        // IMPORTANT: Scanner loop rok do - not found pe bhi scanner close karo
+        if (typeof closeScanner === 'function') closeScanner();
+
+        // History mein not-found bhi add karo (optional - agar chahiye)
+        // Abhi skip karte hain
+
         return;
     }
 
@@ -176,16 +183,17 @@ window.cancelClearHistory = function() {
    AD / COINS
 ═══════════════════════════════════════ */
 function watchAd() {
-    // SmartWebView AdMob (primary)
-    if (window.AdMob && typeof window.AdMob.showRewarded === 'function') {
-        window.AdMob.showRewarded();
+    // CapacitorJS AdMob (primary) — boot.js mein defined
+    if (typeof window.showRewardedAd === 'function' && window.CapAdMob) {
+        window.showRewardedAd();
     }
     // AI2 App Inventor (fallback)
     else if (window.AppInventor) {
         window.AppInventor.setWebViewString('show_ad');
     }
-    // Direct refill agar koi ad network nahi (testing)
+    // Direct refill agar koi ad network nahi (testing / browser mode)
     else {
+        showToast && showToast('Test mode: Ad system available nahi, coins seedhe mil rahe hain', 'info');
         window.gameBar && window.gameBar.refillCoins();
     }
 }
