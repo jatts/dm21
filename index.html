@@ -26,6 +26,61 @@
 
     <!-- Vendor JS: sql.js (SQLite in browser) -->
     <script src="assets/js/sql-wasm.min.js"></script>
+
+    <!-- ═══════════════════════════════════════
+         CAPACITOR BRIDGE
+         Capacitor plugins ES modules hote hain,
+         humara boot.js plain script hai — isliye
+         yahan plugins ko window pe expose karte hain
+         taake boot.js / lookup.js unhe use kar sake.
+         Agar Capacitor.isNativePlatform() false ho
+         (matlab normal browser mein khula hai),
+         to yeh silently skip ho jata hai.
+    ═══════════════════════════════════════ -->
+    <script type="module">
+        (async function () {
+            try {
+                if (!window.Capacitor || !window.Capacitor.isNativePlatform || !window.Capacitor.isNativePlatform()) {
+                    // Browser mein khula hai — Capacitor native plugins available nahi
+                    window.__capacitorReady = false;
+                    return;
+                }
+
+                const cap = window.Capacitor;
+
+                // AdMob plugin
+                try {
+                    const { AdMob } = await import('https://unpkg.com/@capacitor-community/admob@6/dist/esm/index.js');
+                    window.CapAdMob = AdMob;
+                    await AdMob.initialize({ initializeForTesting: true });
+                } catch (e) {
+                    console.warn('AdMob plugin load fail:', e);
+                }
+
+                // Text-To-Speech plugin (agar lagaya ho)
+                try {
+                    const { TextToSpeech } = await import('https://unpkg.com/@capacitor-community/text-to-speech@5/dist/esm/index.js');
+                    window.CapTTS = TextToSpeech;
+                } catch (e) {
+                    console.warn('TTS plugin load fail (optional):', e);
+                }
+
+                // Status bar plugin
+                try {
+                    const { StatusBar } = await import('https://unpkg.com/@capacitor/status-bar@6/dist/esm/index.js');
+                    window.CapStatusBar = StatusBar;
+                } catch (e) {
+                    console.warn('StatusBar plugin load fail (optional):', e);
+                }
+
+                window.__capacitorReady = true;
+                window.dispatchEvent(new Event('capacitorPluginsReady'));
+            } catch (err) {
+                console.warn('Capacitor bridge init error:', err);
+                window.__capacitorReady = false;
+            }
+        })();
+    </script>
 </head>
 <body>
 
