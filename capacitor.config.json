@@ -1,0 +1,9 @@
+{
+  "appId": "com.yourname.dm21",
+  "appName": "Discount Manager",
+  "webDir": "www",
+  "server": {
+    "url": "https://YOURUSERNAME.github.io/dm21-main",
+    "cleartext": false
+  }
+}
