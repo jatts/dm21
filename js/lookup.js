@@ -126,11 +126,6 @@ function lookupBarcode(rawInput, searchMode) {
         afterCard.style.cursor  = 'default';
     }
 
-    // ── If pct found but price missing → open calculator ──
-    if (hasPct && !hasPrice) {
-        openPriceCalc(pN, r.Article || r.Barcode);
-    }
-
     // ── TTS: fixed order — pct first, then price (queued, no overlap) ──
     const speakPct   = (document.getElementById('togglePercentage') || {}).checked;
     const speakPrice = (document.getElementById('toggleAfterPrice') || {}).checked;
@@ -142,6 +137,9 @@ function lookupBarcode(rawInput, searchMode) {
     if (speakPct   && pctDisplay  !== 'N/A') tts(pctDisplay, 'en-US');
     if (speakPrice && discDisplay !== 'N/A') tts(discDisplay, 'en-US');
 
+    // IMPORTANT: History entry pehle add karo, calculator khulne se PEHLE —
+    // taake calcEnter() (calculator.js) jab price update kare to scanHistory[0]
+    // hamesha sahi (abhi-abhi banayi gayi) entry ho, purani ya missing na ho
     const entry = {
         Barcode:r.Barcode, Article:r.Article||'N/A',
         pctDisplay, origDisplay, discDisplay,
@@ -153,6 +151,11 @@ function lookupBarcode(rawInput, searchMode) {
         renderHistory();
     } catch (e) {
         console.warn('History save error:', e);
+    }
+
+    // ── If pct found but price missing → open calculator (history entry already added above) ──
+    if (hasPct && !hasPrice) {
+        openPriceCalc(pN, r.Article || r.Barcode);
     }
 
     document.getElementById('barcodeInput').value = '';
