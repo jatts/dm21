@@ -51,18 +51,31 @@
                 // AdMob plugin
                 try {
                     const { AdMob } = await import('https://unpkg.com/@capacitor-community/admob@6/dist/esm/index.js');
-                    window.CapAdMob = AdMob;
-                    await AdMob.initialize({ initializeForTesting: true });
+                    if (cap.isPluginAvailable && cap.isPluginAvailable('AdMob')) {
+                        window.CapAdMob = AdMob;
+                        await AdMob.initialize({ initializeForTesting: true });
+                    } else {
+                        console.warn('AdMob native plugin registered nahi hai APK mein.');
+                        window.CapAdMob = null;
+                    }
                 } catch (e) {
                     console.warn('AdMob plugin load fail:', e);
+                    window.CapAdMob = null;
                 }
 
-                // Text-To-Speech plugin (agar lagaya ho)
+                // Text-To-Speech plugin
                 try {
                     const { TextToSpeech } = await import('https://unpkg.com/@capacitor-community/text-to-speech@5/dist/esm/index.js');
-                    window.CapTTS = TextToSpeech;
+                    // Check karo ke native side pe plugin actually registered hai
+                    if (cap.isPluginAvailable && cap.isPluginAvailable('TextToSpeech')) {
+                        window.CapTTS = TextToSpeech;
+                    } else {
+                        console.warn('TextToSpeech native plugin registered nahi hai APK mein. package.json mein @capacitor-community/text-to-speech hai lekin shayad cap sync ke baad rebuild nahi hua.');
+                        window.CapTTS = null;
+                    }
                 } catch (e) {
-                    console.warn('TTS plugin load fail (optional):', e);
+                    console.warn('TTS plugin load fail:', e);
+                    window.CapTTS = null;
                 }
 
                 // Status bar plugin
