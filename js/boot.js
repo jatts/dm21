@@ -105,52 +105,80 @@ function _setupAdMobListeners() {
 
     try {
         AdMob.addListener('onRewardedVideoAdReward', function (reward) {
+            console.log('[AdMob] Reward earned:', reward);
             _onRewardEarned();
         });
+        AdMob.addListener('onRewardedVideoAdLoaded', function () {
+            console.log('[AdMob] Rewarded ad loaded successfully');
+        });
         AdMob.addListener('onRewardedVideoAdFailedToLoad', function (err) {
-            console.warn('Rewarded ad failed to load:', err);
-            showToast && showToast('Ad load nahi hui, dobara try karein', 'error');
+            console.warn('[AdMob] Rewarded ad failed to load:', JSON.stringify(err));
+            showToast && showToast('Ad load fail: ' + (err && err.message ? err.message : JSON.stringify(err)), 'error', 4000);
+        });
+        AdMob.addListener('onRewardedVideoAdFailedToShow', function (err) {
+            console.warn('[AdMob] Rewarded ad failed to show:', JSON.stringify(err));
+            showToast && showToast('Ad show fail: ' + (err && err.message ? err.message : JSON.stringify(err)), 'error', 4000);
         });
         _rewardListenersAttached = true;
+        console.log('[AdMob] Listeners attached successfully');
         return true;
     } catch (e) {
-        console.warn('AdMob listener setup failed:', e);
+        console.warn('[AdMob] Listener setup failed:', e);
+        showToast && showToast('AdMob listener setup error: ' + e.message, 'error', 4000);
         return false;
     }
 }
 
 // Reward ad load + show karo
 window.showRewardedAd = async function () {
+    console.log('[AdMob] showRewardedAd called. CapAdMob available:', !!window.CapAdMob);
+
     if (!window.CapAdMob) {
-        console.warn('CapAdMob plugin available nahi — native plugin registered nahi hai ya app browser mein khuli hai');
-        showToast && showToast('Ad system abhi taiyaar nahi', 'warn');
+        var reason = !window.Capacitor
+            ? 'Capacitor bridge load nahi hua'
+            : (!window.Capacitor.isNativePlatform || !window.Capacitor.isNativePlatform())
+                ? 'App browser mein khuli hai, native app nahi'
+                : 'AdMob native plugin APK mein registered nahi (rebuild zaroori)';
+        console.warn('[AdMob] CapAdMob not available. Reason:', reason);
+        showToast && showToast('Ad system ready nahi: ' + reason, 'error', 4000);
         return;
     }
+
     _setupAdMobListeners();
     try {
         showToast && showToast('Ad load ho rahi hai...', 'info', 1500);
+        console.log('[AdMob] Preparing rewarded ad with unit:', AD_UNIT_REWARDED);
         await window.CapAdMob.prepareRewardVideoAd({
             adId: AD_UNIT_REWARDED,
             isTesting: true
         });
+        console.log('[AdMob] Ad prepared, showing now...');
         await window.CapAdMob.showRewardVideoAd();
+        console.log('[AdMob] showRewardVideoAd call completed');
     } catch (e) {
-        console.warn('Rewarded ad show failed:', e);
-        showToast && showToast('Ad show nahi ho saki: ' + (e && e.message ? e.message : 'unknown error'), 'error');
+        console.warn('[AdMob] Rewarded ad show failed:', e);
+        showToast && showToast('Ad error: ' + (e && e.message ? e.message : JSON.stringify(e)), 'error', 5000);
     }
 };
 
 // Banner show/hide helpers (calculator open/close ke liye use hote hain)
 window.showAdBanner = async function () {
-    if (!window.CapAdMob) return;
+    if (!window.CapAdMob) {
+        console.warn('[AdMob] showAdBanner: CapAdMob not available');
+        return;
+    }
     try {
+        console.log('[AdMob] Showing banner with unit:', AD_UNIT_BANNER);
         await window.CapAdMob.showBanner({
             adId: AD_UNIT_BANNER,
             adSize: 'BANNER',
             position: 'BOTTOM_CENTER',
             isTesting: true
         });
-    } catch (e) {}
+        console.log('[AdMob] Banner show call completed');
+    } catch (e) {
+        console.warn('[AdMob] Banner show failed:', e);
+    }
 };
 window.hideAdBanner = async function () {
     if (!window.CapAdMob) return;
@@ -158,6 +186,7 @@ window.hideAdBanner = async function () {
 };
 
 window.addEventListener('capacitorPluginsReady', function () {
+    console.log('[Capacitor] Plugins ready event fired. CapAdMob:', !!window.CapAdMob, 'CapTTS:', !!window.CapTTS, 'CapStatusBar:', !!window.CapStatusBar);
     _setupAdMobListeners();
     window.showAdBanner();
 });
