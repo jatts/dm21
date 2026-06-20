@@ -32,9 +32,9 @@ if ('speechSynthesis' in window) {
 
 function tts(text, lang) {
     lang = lang || 'en-US';
-    if (!('speechSynthesis' in window)) return;
-    // Android WebView mein getVoices() hamesha empty array deta hai
-    // Isliye voices ka wait mat karo - directly queue mein dalo
+    // Yahan speechSynthesis check NAHI karte — CapTTS (Capacitor plugin)
+    // alag mechanism hai jo speechSynthesis pe depend nahi karta.
+    // Asal check runTts() ke andar hota hai jahan har method try hota hai.
     ttsQueue.push({text: text, lang: lang});
     if (!ttsBusy) runTts();
 }
@@ -72,17 +72,21 @@ function runTts() {
 
     // Method 3: Standard Web Speech API (browser fallback — Android WebView mein
     // yeh aksar silently fail hoti hai kyunki Android System TTS se connect nahi hoti)
-    if (!('speechSynthesis' in window)) { ttsBusy = false; return; }
+    if (!('speechSynthesis' in window)) {
+        console.warn('Koi TTS method available nahi: CapTTS, AndroidInterface, ya speechSynthesis - koi nahi mila');
+        ttsBusy = false;
+        return;
+    }
     var u = new SpeechSynthesisUtterance(item.text);
     u.lang = item.lang || 'en-US';
     u.rate = 0.9;
     u.volume = 1;
     u.onend = function() { ttsBusy = false; runTts(); };
-    u.onerror = function() { ttsBusy = false; runTts(); };
-    speechSynthesis.cancel();
+    u.onerror = function(ev) { console.warn('speechSynthesis error:', ev.error); ttsBusy = false; runTts(); };
+    try { speechSynthesis.cancel(); } catch(e) {}
     setTimeout(function() {
         try { speechSynthesis.speak(u); }
-        catch(e) { ttsBusy = false; runTts(); }
+        catch(e) { console.warn('speechSynthesis.speak failed:', e); ttsBusy = false; runTts(); }
     }, 150);
 }
 
