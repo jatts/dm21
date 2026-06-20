@@ -1,56 +1,76 @@
 /* ═══════════════════════════════════════
    STATUS BAR FIX — CapacitorJS
    Capacitor @capacitor/status-bar plugin se
-   asal status bar height milti hai.
-   Fallback: getBoundingClientRect detection
+   asal status bar overlay disable karte hain
+   taake WebView notch/camera-cutout ke neeche
+   se shuru ho — env(safe-area-inset-top) phir
+   sahi value deta hai jo notch height bhi
+   include karti hai.
 ═══════════════════════════════════════ */
 (function() {
     function applyStatusBarPadding(px) {
         var gb = document.getElementById('gamebar-wrap');
         if (!gb) return;
-        px = Math.max(0, Math.min(px, 80)); // 0-80px range safety
+        px = Math.max(0, Math.min(px, 120)); // notch wale phones mein zyada ho sakta hai
         gb.style.paddingTop = px + 'px';
         gb.style.height = (58 + px) + 'px';
     }
 
-    function trySetupStatusBar() {
-        if (window.CapStatusBar) {
-            // Capacitor StatusBar plugin se overlay disable karo
-            // taake WebView content status bar ke neeche se shuru ho
-            try {
-                window.CapStatusBar.setOverlaysWebView({ overlay: false });
-            } catch (e) {}
-            return true;
-        }
-        return false;
-    }
-
-    // Plugins load hone ka wait karo
-    if (!trySetupStatusBar()) {
-        window.addEventListener('capacitorPluginsReady', trySetupStatusBar);
-    }
-
-    // Fallback: agar overlay false set bhi ho jaye,
-    // safe-area-inset-top Capacitor mein sahi kaam karta hai
     function applySafeArea() {
         var gb = document.getElementById('gamebar-wrap');
         if (!gb) return;
         gb.style.paddingTop = 'env(safe-area-inset-top, 0px)';
         gb.style.height = 'calc(58px + env(safe-area-inset-top, 0px))';
     }
+
+    async function trySetupStatusBar() {
+        if (!window.CapStatusBar) return false;
+        try {
+            // Overlay false = status bar apni space lega, WebView uske neeche shuru hogi
+            await window.CapStatusBar.setOverlaysWebView({ overlay: false });
+            // Dark icons chahiye agar status bar dark background pe hai, light agar gamebar dark hai
+            try { await window.CapStatusBar.setStyle({ style: 'DARK' }); } catch(e) {}
+
+            // setOverlaysWebView ke baad layout settle hone do, phir safe-area apply karo
+            setTimeout(function() {
+                applySafeArea();
+                // Verify: agar ab bhi gap nahi bana to manual estimate use karo
+                setTimeout(function() {
+                    var gb = document.getElementById('gamebar-wrap');
+                    if (!gb) return;
+                    var rect = gb.getBoundingClientRect();
+                    if (rect.top < 4) {
+                        // Punch-hole/notch wale phones mein status bar 30-40px tak ho sakti hai
+                        applyStatusBarPadding(36);
+                    }
+                }, 150);
+            }, 100);
+
+            return true;
+        } catch (e) {
+            console.warn('StatusBar setOverlaysWebView failed:', e);
+            return false;
+        }
+    }
+
+    // Plugin load hone ka wait karo
+    if (!trySetupStatusBar()) {
+        window.addEventListener('capacitorPluginsReady', trySetupStatusBar);
+    }
+
+    // Immediate fallback jab tak plugin load ho raha hai
     applySafeArea();
 
-    // Extra fallback: agar env() bhi 0 aaye (rare), rect check karo
+    // Last-resort fallback agar StatusBar plugin bilkul available na ho
     setTimeout(function() {
+        if (window.CapStatusBar) return; // plugin mil gaya, woh handle karega
         var gb = document.getElementById('gamebar-wrap');
         if (!gb) return;
         var rect = gb.getBoundingClientRect();
-        if (rect.top < 2) {
-            // env() kaam nahi kar raha — manual estimate (status bar ~24-32px)
-            var estimate = window.Capacitor && window.Capacitor.getPlatform && window.Capacitor.getPlatform() === 'android' ? 28 : 0;
-            if (estimate > 0) applyStatusBarPadding(estimate);
+        if (rect.top < 4) {
+            applyStatusBarPadding(36);
         }
-    }, 300);
+    }, 500);
 
     window.setStatusBarHeight = function(px) { applyStatusBarPadding(parseInt(px) || 0); };
 })();
@@ -102,16 +122,21 @@ function _setupAdMobListeners() {
 // Reward ad load + show karo
 window.showRewardedAd = async function () {
     if (!window.CapAdMob) {
+        console.warn('CapAdMob plugin available nahi — native plugin registered nahi hai ya app browser mein khuli hai');
         showToast && showToast('Ad system abhi taiyaar nahi', 'warn');
         return;
     }
     _setupAdMobListeners();
     try {
-        await window.CapAdMob.prepareRewardVideoAd({ adId: AD_UNIT_REWARDED });
+        showToast && showToast('Ad load ho rahi hai...', 'info', 1500);
+        await window.CapAdMob.prepareRewardVideoAd({
+            adId: AD_UNIT_REWARDED,
+            isTesting: true
+        });
         await window.CapAdMob.showRewardVideoAd();
     } catch (e) {
         console.warn('Rewarded ad show failed:', e);
-        showToast && showToast('Ad show nahi ho saki', 'error');
+        showToast && showToast('Ad show nahi ho saki: ' + (e && e.message ? e.message : 'unknown error'), 'error');
     }
 };
 
