@@ -236,12 +236,12 @@ function onBarcodeDetected(code) {
 
     if (isContinuous()) {
         const delaySec = getDelaySec();
-        // Stop camera to save battery
+        // Scan hote hi camera TURANT band karo (black screen) — countdown ke
+        // dauran camera band rehni chahiye, khatam hone par dobara khulegi
         stopCamera();
-        // Show countdown overlay, then restart camera
         showCountdown(delaySec, () => {
             if (document.getElementById('scannerBox').classList.contains('open')) {
-                openScanner(); // restarts camera fresh
+                openScanner(); // camera fresh restart
             }
         });
     } else {
