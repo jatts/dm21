@@ -1,27 +1,64 @@
 /* ═══════════════════════════════════════
-   MANUAL FOCUS SLIDER
+   FOCUS TOGGLE — Near / Auto / Far
+   Android cameras mein focusDistance ka fine-grained
+   slider control reliably support nahi hota — sirf
+   extreme values (min/max) ya 'continuous' auto-focus
+   set karna zyada reliable hai.
 ═══════════════════════════════════════ */
 (function() {
-    const slider = document.getElementById('focusSlider');
-    slider.addEventListener('input', async () => {
-        if (!torchTrack) return;
+    var btnNear = document.getElementById('focusNearBtn');
+    var btnAuto = document.getElementById('focusAutoBtn');
+    var btnFar  = document.getElementById('focusFarBtn');
+    if (!btnNear || !btnAuto || !btnFar) return;
+
+    function setActiveBtn(btn) {
+        [btnNear, btnAuto, btnFar].forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+    }
+
+    async function applyFocus(mode) {
+        if (!torchTrack) {
+            showToast && showToast('Camera abhi taiyaar nahi', 'warn', 1500);
+            return;
+        }
         try {
-            const caps = torchTrack.getCapabilities();
-            // focusDistance support check
-            if (caps.focusDistance) {
-                const min = caps.focusDistance.min || 0;
-                const max = caps.focusDistance.max || 1;
-                const val = min + ((slider.value / 100) * (max - min));
-                await torchTrack.applyConstraints({
-                    advanced: [{ focusMode: 'manual', focusDistance: val }]
-                });
+            var caps = torchTrack.getCapabilities ? torchTrack.getCapabilities() : {};
+
+            if (mode === 'auto') {
+                if (caps.focusMode && caps.focusMode.indexOf('continuous') !== -1) {
+                    await torchTrack.applyConstraints({ advanced: [{ focusMode: 'continuous' }] });
+                } else if (caps.focusMode && caps.focusMode.indexOf('single-shot') !== -1) {
+                    await torchTrack.applyConstraints({ advanced: [{ focusMode: 'single-shot' }] });
+                }
+                return;
             }
-        } catch(e) { /* device may not support manual focus */ }
-    });
+
+            // Near / Far — extreme values use karo (min/max), beech ki fine value nahi
+            if (caps.focusDistance && caps.focusMode && caps.focusMode.indexOf('manual') !== -1) {
+                var min = caps.focusDistance.min || 0;
+                var max = caps.focusDistance.max || 1;
+                // Camera API mein chhota focusDistance = nazdeek, bada = door (zyadatar devices mein)
+                var target = mode === 'near' ? min : max;
+                await torchTrack.applyConstraints({
+                    advanced: [{ focusMode: 'manual', focusDistance: target }]
+                });
+            } else {
+                showToast && showToast('Yeh camera manual focus support nahi karta', 'warn', 2000);
+            }
+        } catch (e) {
+            console.warn('[Focus] applyFocus failed:', e);
+            showToast && showToast('Focus change nahi ho saka', 'warn', 1500);
+        }
+    }
+
+    btnNear.addEventListener('click', function() { setActiveBtn(btnNear); applyFocus('near'); });
+    btnAuto.addEventListener('click', function() { setActiveBtn(btnAuto); applyFocus('auto'); });
+    btnFar.addEventListener('click',  function() { setActiveBtn(btnFar);  applyFocus('far');  });
+
     // Reset to auto-focus when scanner closes
-    const origClose = window.closeScanner;
+    var origClose = window.closeScanner;
     window.closeScanner = function() {
-        slider.value = 50;
+        setActiveBtn(btnAuto);
         if (torchTrack) {
             try { torchTrack.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }); } catch(e) {}
         }
