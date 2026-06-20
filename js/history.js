@@ -20,7 +20,7 @@ var scanHistory = [];
 })();
 
 function saveScanHistory() {
-    try { AppDB.set('scanHistory', JSON.stringify(scanHistory.slice(0, 200))); } catch(e) {}
+    try { AppDB.set('scanHistory', JSON.stringify(scanHistory.slice(0, 30))); } catch(e) {}
 }
 
 function esc(s) {
