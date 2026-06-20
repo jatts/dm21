@@ -135,7 +135,9 @@ function lookupBarcode(rawInput, searchMode) {
     const speakPct   = (document.getElementById('togglePercentage') || {}).checked;
     const speakPrice = (document.getElementById('toggleAfterPrice') || {}).checked;
     ttsQueue.length = 0;
-    speechSynthesis.cancel();
+    if (typeof speechSynthesis !== 'undefined') {
+        try { speechSynthesis.cancel(); } catch(e) {}
+    }
     ttsBusy = false;
     if (speakPct   && pctDisplay  !== 'N/A') tts(pctDisplay, 'en-US');
     if (speakPrice && discDisplay !== 'N/A') tts(discDisplay, 'en-US');
@@ -145,9 +147,13 @@ function lookupBarcode(rawInput, searchMode) {
         pctDisplay, origDisplay, discDisplay,
         pct:pN||0, savings:ok?(opN-disc):0, ts:Date.now()
     };
-    scanHistory.unshift(entry);
-    saveScanHistory();
-    renderHistory();
+    try {
+        scanHistory.unshift(entry);
+        saveScanHistory();
+        renderHistory();
+    } catch (e) {
+        console.warn('History save error:', e);
+    }
 
     document.getElementById('barcodeInput').value = '';
     document.getElementById('adPrompt').style.display = 'none';
