@@ -29,84 +29,89 @@
 
     <!-- ═══════════════════════════════════════
          CAPACITOR BRIDGE
-         Capacitor plugins ES modules hote hain,
-         humara boot.js plain script hai — isliye
-         yahan plugins ko window pe expose karte hain
-         taake boot.js / lookup.js unhe use kar sake.
+         Capacitor plugins ko CDN se import karna fragile hai
+         (network dependency, CORS, version mismatch). Iski jagah
+         hum DIRECT window.Capacitor.Plugins registry use karte hain —
+         yeh native APK build ke waqt khud-ba-khud available hota hai,
+         kisi import ki zaroorat nahi.
 
-         IMPORTANT: window.Capacitor native bridge se
-         INJECT hota hai — yeh turant available nahi hota,
-         khaaskar jab app remote URL (GitHub Pages) se
-         load ho rahi ho. Isliye hum WAIT/RETRY karte hain
-         jab tak Capacitor object mil na jaye (max ~5 sec),
-         sirf ek baar check karke give-up nahi karte.
+         window.Capacitor native bridge se INJECT hota hai — turant
+         available nahi hota, isliye WAIT/RETRY karte hain.
     ═══════════════════════════════════════ -->
-    <script type="module">
-        (async function () {
-            // window.Capacitor inject hone ka wait karo (max 50 tries x 100ms = 5 sec)
-            async function waitForCapacitor(maxTries) {
-                for (var i = 0; i < maxTries; i++) {
-                    if (window.Capacitor && window.Capacitor.isNativePlatform) {
-                        return true;
+    <script>
+        (function () {
+            var tries = 0;
+            var MAX_TRIES = 100; // 100 x 100ms = 10 second max wait
+
+            function tryInitPlugins() {
+                tries++;
+
+                if (!window.Capacitor) {
+                    if (tries < MAX_TRIES) {
+                        setTimeout(tryInitPlugins, 100);
+                    } else {
+                        console.warn('[Capacitor] window.Capacitor 10 second tak nahi mila. Browser mode mein chal raha hai.');
+                        window.__capacitorReady = false;
+                        window.dispatchEvent(new Event('capacitorPluginsReady'));
                     }
-                    await new Promise(function(r) { setTimeout(r, 100); });
+                    return;
                 }
-                return false;
-            }
 
-            try {
-                var capacitorFound = await waitForCapacitor(50);
+                var isNative = window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
+                console.log('[Capacitor] Bridge detected after', tries * 100, 'ms. isNativePlatform:', isNative, 'platform:', window.Capacitor.getPlatform ? window.Capacitor.getPlatform() : '?');
 
-                if (!capacitorFound || !window.Capacitor.isNativePlatform()) {
-                    // Browser mein khula hai (ya Capacitor bridge kabhi inject nahi hua)
-                    console.warn('[Capacitor] window.Capacitor available nahi mila 5 second tak. Native platform:', !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()));
+                if (!isNative) {
+                    console.warn('[Capacitor] Native platform nahi hai — browser/preview mode.');
                     window.__capacitorReady = false;
                     window.dispatchEvent(new Event('capacitorPluginsReady'));
                     return;
                 }
 
-                console.log('[Capacitor] Bridge found! Platform:', window.Capacitor.getPlatform ? window.Capacitor.getPlatform() : 'unknown');
-                const cap = window.Capacitor;
+                if (!window.Capacitor.Plugins) {
+                    console.warn('[Capacitor] window.Capacitor.Plugins registry available nahi.');
+                    window.__capacitorReady = false;
+                    window.dispatchEvent(new Event('capacitorPluginsReady'));
+                    return;
+                }
 
-                // AdMob plugin
-                try {
-                    const { AdMob } = await import('https://unpkg.com/@capacitor-community/admob@6/dist/esm/index.js');
-                    console.log('[Capacitor] AdMob isPluginAvailable check:', cap.isPluginAvailable ? cap.isPluginAvailable('AdMob') : 'isPluginAvailable not a function');
-                    // isPluginAvailable check sख्त na karo — kabhi kabhi yeh false-negative deta hai
-                    // pehle access karne ki koshish karo, agar plugin call fail ho to wahan handle karenge
-                    window.CapAdMob = AdMob;
-                    await AdMob.initialize({ initializeForTesting: true });
-                    console.log('[Capacitor] AdMob initialized successfully');
-                } catch (e) {
-                    console.warn('[Capacitor] AdMob plugin load/init fail:', e);
+                var Plugins = window.Capacitor.Plugins;
+                console.log('[Capacitor] Available native plugins:', Object.keys(Plugins).join(', '));
+
+                // AdMob — direct registry se, koi CDN import nahi
+                if (Plugins.AdMob) {
+                    window.CapAdMob = Plugins.AdMob;
+                    try {
+                        window.CapAdMob.initialize({ initializeForTesting: true });
+                        console.log('[Capacitor] AdMob initialize() called');
+                    } catch (e) {
+                        console.warn('[Capacitor] AdMob initialize failed:', e);
+                    }
+                } else {
+                    console.warn('[Capacitor] Plugins.AdMob registry mein nahi mila. Keys:', Object.keys(Plugins).join(', '));
                     window.CapAdMob = null;
                 }
 
-                // Text-To-Speech plugin
-                try {
-                    const { TextToSpeech } = await import('https://unpkg.com/@capacitor-community/text-to-speech@5/dist/esm/index.js');
-                    console.log('[Capacitor] TextToSpeech isPluginAvailable check:', cap.isPluginAvailable ? cap.isPluginAvailable('TextToSpeech') : 'isPluginAvailable not a function');
-                    window.CapTTS = TextToSpeech;
-                    console.log('[Capacitor] TextToSpeech plugin assigned');
-                } catch (e) {
-                    console.warn('[Capacitor] TTS plugin load fail:', e);
+                // TextToSpeech — direct registry se
+                if (Plugins.TextToSpeech) {
+                    window.CapTTS = Plugins.TextToSpeech;
+                    console.log('[Capacitor] TextToSpeech plugin assigned from registry');
+                } else {
+                    console.warn('[Capacitor] Plugins.TextToSpeech registry mein nahi mila. Keys:', Object.keys(Plugins).join(', '));
                     window.CapTTS = null;
                 }
 
-                // Status bar plugin
-                try {
-                    const { StatusBar } = await import('https://unpkg.com/@capacitor/status-bar@6/dist/esm/index.js');
-                    window.CapStatusBar = StatusBar;
-                } catch (e) {
-                    console.warn('StatusBar plugin load fail (optional):', e);
+                // StatusBar — direct registry se
+                if (Plugins.StatusBar) {
+                    window.CapStatusBar = Plugins.StatusBar;
+                } else {
+                    console.warn('[Capacitor] Plugins.StatusBar registry mein nahi mila.');
                 }
 
                 window.__capacitorReady = true;
                 window.dispatchEvent(new Event('capacitorPluginsReady'));
-            } catch (err) {
-                console.warn('Capacitor bridge init error:', err);
-                window.__capacitorReady = false;
             }
+
+            tryInitPlugins();
         })();
     </script>
 </head>
