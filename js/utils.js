@@ -39,6 +39,8 @@ function tts(text, lang) {
     if (!ttsBusy) runTts();
 }
 
+var _ttsFailureToastShown = false;
+
 function runTts() {
     if (!ttsQueue.length) { ttsBusy = false; return; }
     ttsBusy = true;
@@ -46,6 +48,7 @@ function runTts() {
 
     // Method 1: CapacitorJS native TTS plugin (sab se reliable — Android System TTS use karta hai)
     if (window.CapTTS && typeof window.CapTTS.speak === 'function') {
+        console.log('[TTS] Using CapTTS for:', item.text);
         window.CapTTS.speak({
             text: item.text,
             lang: item.lang || 'en-US',
@@ -53,9 +56,11 @@ function runTts() {
             volume: 1.0,
             category: 'ambient'
         }).then(function() {
+            console.log('[TTS] CapTTS speak succeeded');
             ttsBusy = false;
             runTts();
-        }).catch(function() {
+        }).catch(function(e) {
+            console.warn('[TTS] CapTTS speak failed:', e);
             ttsBusy = false;
             runTts();
         });
@@ -64,6 +69,7 @@ function runTts() {
 
     // Method 2: SmartWebView native AndroidInterface TTS (agar SmartWebView build hai)
     if (window.AndroidInterface && typeof window.AndroidInterface.speakText === 'function') {
+        console.log('[TTS] Using AndroidInterface for:', item.text);
         window.AndroidInterface.speakText(item.text, item.lang || 'en-US');
         ttsBusy = false;
         setTimeout(runTts, 800);
@@ -73,20 +79,35 @@ function runTts() {
     // Method 3: Standard Web Speech API (browser fallback — Android WebView mein
     // yeh aksar silently fail hoti hai kyunki Android System TTS se connect nahi hoti)
     if (!('speechSynthesis' in window)) {
-        console.warn('Koi TTS method available nahi: CapTTS, AndroidInterface, ya speechSynthesis - koi nahi mila');
+        console.warn('[TTS] Koi TTS method available nahi: CapTTS, AndroidInterface, ya speechSynthesis - koi nahi mila');
+        if (!_ttsFailureToastShown) {
+            _ttsFailureToastShown = true;
+            showToast && showToast('Voice system available nahi (TTS plugin not registered)', 'error', 4000);
+        }
         ttsBusy = false;
         return;
     }
+    console.log('[TTS] Using browser speechSynthesis for:', item.text);
     var u = new SpeechSynthesisUtterance(item.text);
     u.lang = item.lang || 'en-US';
     u.rate = 0.9;
     u.volume = 1;
-    u.onend = function() { ttsBusy = false; runTts(); };
-    u.onerror = function(ev) { console.warn('speechSynthesis error:', ev.error); ttsBusy = false; runTts(); };
+    u.onend = function() { console.log('[TTS] speechSynthesis ended successfully'); ttsBusy = false; runTts(); };
+    u.onerror = function(ev) {
+        console.warn('[TTS] speechSynthesis error:', ev.error);
+        if (!_ttsFailureToastShown) {
+            _ttsFailureToastShown = true;
+            showToast && showToast('Voice error: ' + ev.error, 'error', 4000);
+        }
+        ttsBusy = false; runTts();
+    };
     try { speechSynthesis.cancel(); } catch(e) {}
     setTimeout(function() {
         try { speechSynthesis.speak(u); }
-        catch(e) { console.warn('speechSynthesis.speak failed:', e); ttsBusy = false; runTts(); }
+        catch(e) {
+            console.warn('[TTS] speechSynthesis.speak failed:', e);
+            ttsBusy = false; runTts();
+        }
     }, 150);
 }
 
