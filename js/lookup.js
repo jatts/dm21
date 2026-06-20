@@ -205,3 +205,10 @@ function watchAd() {
 }
 document.getElementById('watchAdBtn').addEventListener('click', watchAd);
 document.getElementById('settingWatchAd').addEventListener('click', watchAd);
+
+// Coin block pe tap karke bhi kabhi bhi ad dekh sako (sirf coins=0 hone ka wait nahi karna)
+// Max-coins check refillCoins() ke andar already hai
+var _coinBlockTap = document.getElementById('coinBlockTap');
+if (_coinBlockTap) {
+    _coinBlockTap.addEventListener('click', watchAd);
+}
