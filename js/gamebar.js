@@ -127,10 +127,11 @@ window.gameBar = {
         updateGameBar();
         showToast('Game reset ho gaya', 'info');
     },
-    // watchAd: settings.js is ko call karta hai
+    // watchAd: button click se lookup.js ka global watchAd() call hota hai
+    // (yeh internal method sirf reference/fallback ke liye hai)
     watchAd() {
-        if (window.AdMob && typeof window.AdMob.showRewarded === 'function') {
-            window.AdMob.showRewarded();
+        if (typeof window.showRewardedAd === 'function' && window.CapAdMob) {
+            window.showRewardedAd();
         } else if (window.AppInventor) {
             window.AppInventor.setWebViewString('show_ad');
         } else {
@@ -159,8 +160,8 @@ function showRewardSuccess(newCoins) {
     var ap = document.getElementById('adPrompt');
     if (ap) ap.style.display = 'none';
 
-    // Countdown 3 seconds
-    var count = 3;
+    // Countdown 5 seconds (pehle 3 second tha — bohot jaldi band ho jata tha)
+    var count = 5;
     if (cdEl) cdEl.textContent = count;
     if (_rewardTimer) clearInterval(_rewardTimer);
     _rewardTimer = setInterval(function() {
