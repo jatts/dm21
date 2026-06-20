@@ -33,48 +33,63 @@
          humara boot.js plain script hai — isliye
          yahan plugins ko window pe expose karte hain
          taake boot.js / lookup.js unhe use kar sake.
-         Agar Capacitor.isNativePlatform() false ho
-         (matlab normal browser mein khula hai),
-         to yeh silently skip ho jata hai.
+
+         IMPORTANT: window.Capacitor native bridge se
+         INJECT hota hai — yeh turant available nahi hota,
+         khaaskar jab app remote URL (GitHub Pages) se
+         load ho rahi ho. Isliye hum WAIT/RETRY karte hain
+         jab tak Capacitor object mil na jaye (max ~5 sec),
+         sirf ek baar check karke give-up nahi karte.
     ═══════════════════════════════════════ -->
     <script type="module">
         (async function () {
+            // window.Capacitor inject hone ka wait karo (max 50 tries x 100ms = 5 sec)
+            async function waitForCapacitor(maxTries) {
+                for (var i = 0; i < maxTries; i++) {
+                    if (window.Capacitor && window.Capacitor.isNativePlatform) {
+                        return true;
+                    }
+                    await new Promise(function(r) { setTimeout(r, 100); });
+                }
+                return false;
+            }
+
             try {
-                if (!window.Capacitor || !window.Capacitor.isNativePlatform || !window.Capacitor.isNativePlatform()) {
-                    // Browser mein khula hai — Capacitor native plugins available nahi
+                var capacitorFound = await waitForCapacitor(50);
+
+                if (!capacitorFound || !window.Capacitor.isNativePlatform()) {
+                    // Browser mein khula hai (ya Capacitor bridge kabhi inject nahi hua)
+                    console.warn('[Capacitor] window.Capacitor available nahi mila 5 second tak. Native platform:', !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()));
                     window.__capacitorReady = false;
+                    window.dispatchEvent(new Event('capacitorPluginsReady'));
                     return;
                 }
 
+                console.log('[Capacitor] Bridge found! Platform:', window.Capacitor.getPlatform ? window.Capacitor.getPlatform() : 'unknown');
                 const cap = window.Capacitor;
 
                 // AdMob plugin
                 try {
                     const { AdMob } = await import('https://unpkg.com/@capacitor-community/admob@6/dist/esm/index.js');
-                    if (cap.isPluginAvailable && cap.isPluginAvailable('AdMob')) {
-                        window.CapAdMob = AdMob;
-                        await AdMob.initialize({ initializeForTesting: true });
-                    } else {
-                        console.warn('AdMob native plugin registered nahi hai APK mein.');
-                        window.CapAdMob = null;
-                    }
+                    console.log('[Capacitor] AdMob isPluginAvailable check:', cap.isPluginAvailable ? cap.isPluginAvailable('AdMob') : 'isPluginAvailable not a function');
+                    // isPluginAvailable check sख्त na karo — kabhi kabhi yeh false-negative deta hai
+                    // pehle access karne ki koshish karo, agar plugin call fail ho to wahan handle karenge
+                    window.CapAdMob = AdMob;
+                    await AdMob.initialize({ initializeForTesting: true });
+                    console.log('[Capacitor] AdMob initialized successfully');
                 } catch (e) {
-                    console.warn('AdMob plugin load fail:', e);
+                    console.warn('[Capacitor] AdMob plugin load/init fail:', e);
                     window.CapAdMob = null;
                 }
 
                 // Text-To-Speech plugin
                 try {
                     const { TextToSpeech } = await import('https://unpkg.com/@capacitor-community/text-to-speech@5/dist/esm/index.js');
-                    // Check karo ke native side pe plugin actually registered hai
-                    if (cap.isPluginAvailable && cap.isPluginAvailable('TextToSpeech')) {
-                        window.CapTTS = TextToSpeech;
-                    } else {
-                        console.warn('TextToSpeech native plugin registered nahi hai APK mein. package.json mein @capacitor-community/text-to-speech hai lekin shayad cap sync ke baad rebuild nahi hua.');
-                        window.CapTTS = null;
-                    }
+                    console.log('[Capacitor] TextToSpeech isPluginAvailable check:', cap.isPluginAvailable ? cap.isPluginAvailable('TextToSpeech') : 'isPluginAvailable not a function');
+                    window.CapTTS = TextToSpeech;
+                    console.log('[Capacitor] TextToSpeech plugin assigned');
                 } catch (e) {
-                    console.warn('TTS plugin load fail:', e);
+                    console.warn('[Capacitor] TTS plugin load fail:', e);
                     window.CapTTS = null;
                 }
 
