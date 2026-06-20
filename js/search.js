@@ -39,12 +39,17 @@ function doSearch() {
             </tr></thead>
             <tbody>${rows.map(r=>{
                 const pN=parseFloat(r.Percentage), opN=parseFloat(r.OriginalPrice);
-                const ok=!isNaN(pN)&&!isNaN(opN);
+                // Percentage aur Price ALAG ALAG check hote hain — Percentage
+                // har barcode mein ho sakti hai chahe Price ho ya na ho
+                const hasPctS   = !isNaN(pN) && isFinite(pN);
+                const rawPriceS = String(r.OriginalPrice ?? '').trim();
+                const hasPriceS = rawPriceS !== '' && rawPriceS !== '0' && !isNaN(opN) && isFinite(opN) && opN > 0;
+                const ok=hasPctS && hasPriceS;
                 const disc=ok?Math.floor(opN*(1-pN/100)):null;
                 return `<tr onclick="fillAndScan('${esc(r.Barcode)}')">
                     <td>${highlightMatch(r.Article||'N/A', qDisplay)}</td>
                     <td style="color:var(--muted)">${highlightMatch(r.Barcode, qDisplay)}</td>
-                    <td><span class="badge-pct">${ok?Math.floor(pN)+'%':'N/A'}</span></td>
+                    <td><span class="badge-pct">${hasPctS?Math.floor(pN)+'%':'N/A'}</span></td>
                     <td class="badge-price">${disc!==null?disc:'N/A'}</td>
                 </tr>`;
             }).join('')}</tbody>
