@@ -32,6 +32,9 @@ function closePriceCalc() {
     var _ov2 = document.getElementById('priceCalcOverlay');
     _ov2.style.display = 'none';
     _ov2.classList.remove('open');
+    // Reset karo taake agla lookup confuse na ho "calculator already open" check mein
+    calcBarcode    = '';
+    calcHistoryIdx = -1;
     // Banner wapis show karo
     if (typeof window.showAdBanner === 'function') window.showAdBanner();
 }
