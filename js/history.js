@@ -62,7 +62,7 @@ function openHistoryPriceEntry(idx) {
     var entry = scanHistory[idx];
     if (!entry) return;
     if (typeof openPriceCalc === 'function') {
-        openPriceCalc(entry.pct, entry.Article, entry.Barcode);
+        openPriceCalc(entry.pct, entry.Article, entry.Barcode, idx);
     }
 }
 window.openHistoryPriceEntry = openHistoryPriceEntry;
