@@ -162,17 +162,21 @@ window.showRewardedAd = async function () {
 };
 
 // Banner show/hide helpers (calculator open/close ke liye use hote hain)
-var _bannerVisible = false; // current state track karo taake duplicate calls na ho
+var _bannerOpInProgress = false;
+var _bannerShowRetryTimer = null;
 
 window.showAdBanner = async function () {
     if (!window.CapAdMob) {
         console.warn('[AdMob] showAdBanner: CapAdMob not available');
         return;
     }
-    if (_bannerVisible) {
-        console.log('[AdMob] Banner already visible, skip duplicate show call');
-        return;
+    // Pehle se koi pending retry ho to cancel karo (fresh attempt karenge)
+    if (_bannerShowRetryTimer) { clearTimeout(_bannerShowRetryTimer); _bannerShowRetryTimer = null; }
+
+    if (_bannerOpInProgress) {
+        await new Promise(function(r) { setTimeout(r, 300); });
     }
+    _bannerOpInProgress = true;
     try {
         console.log('[AdMob] Showing banner with unit:', AD_UNIT_BANNER);
         await window.CapAdMob.showBanner({
@@ -181,20 +185,41 @@ window.showAdBanner = async function () {
             position: 'BOTTOM_CENTER',
             isTesting: true
         });
-        _bannerVisible = true;
         console.log('[AdMob] Banner show call completed');
     } catch (e) {
         console.warn('[AdMob] Banner show failed:', e);
-        _bannerVisible = false;
+    } finally {
+        _bannerOpInProgress = false;
     }
+
+    // SAFETY RETRY: agar pehli koshish kisi wajah se silently fail ho gayi ho
+    // (network slow, plugin race condition, etc), 1.5s baad ek aur try karo.
+    // Yeh guarantee karta hai ke banner kabhi permanently gayab na rahe.
+    _bannerShowRetryTimer = setTimeout(function() {
+        if (window.CapAdMob && !_bannerOpInProgress) {
+            console.log('[AdMob] Safety retry: re-showing banner to ensure visibility');
+            window.CapAdMob.showBanner({
+                adId: AD_UNIT_BANNER,
+                adSize: 'BANNER',
+                position: 'BOTTOM_CENTER',
+                isTesting: true
+            }).catch(function(e) { console.warn('[AdMob] Safety retry failed:', e); });
+        }
+    }, 1500);
 };
 window.hideAdBanner = async function () {
     if (!window.CapAdMob) return;
+    // Agar koi pending "show retry" hai, usay cancel karo — warna calculator
+    // band hone se pehle hi banner wapis aa sakta hai
+    if (_bannerShowRetryTimer) { clearTimeout(_bannerShowRetryTimer); _bannerShowRetryTimer = null; }
+    _bannerOpInProgress = true;
     try {
         await window.CapAdMob.hideBanner();
-        _bannerVisible = false;
+        console.log('[AdMob] Banner hide call completed');
     } catch (e) {
         console.warn('[AdMob] Banner hide failed:', e);
+    } finally {
+        _bannerOpInProgress = false;
     }
 };
 
