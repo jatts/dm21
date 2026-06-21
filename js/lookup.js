@@ -159,7 +159,19 @@ function lookupBarcode(rawInput, searchMode) {
 
     // ── If pct found but price missing → open calculator (history entry already added above) ──
     if (hasPct && !hasPrice) {
-        openPriceCalc(pN, r.Article || r.Barcode, r.Barcode, 0);
+        var _ov = document.getElementById('priceCalcOverlay');
+        var _calcAlreadyOpenForOther =
+            _ov && _ov.classList.contains('open') &&
+            typeof calcBarcode !== 'undefined' && calcBarcode && calcBarcode !== r.Barcode;
+
+        if (_calcAlreadyOpenForOther) {
+            // Pehle wala calculator abhi bhi khula hai kisi AUR barcode ke liye —
+            // silently overwrite mat karo (warna purani entry hamesha N/A reh jati hai).
+            // User ko clearly batao ke pehle wo complete/cancel kare.
+            showToast('⚠️ Pehle "' + calcBarcode + '" ki price enter ya cancel karein', 'warn', 3500);
+        } else {
+            openPriceCalc(pN, r.Article || r.Barcode, r.Barcode, 0);
+        }
     }
 
     document.getElementById('barcodeInput').value = '';
