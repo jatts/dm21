@@ -160,4 +160,3 @@ document.getElementById('calcDisplay').addEventListener('change', function() {
 document.getElementById('priceCalcOverlay').addEventListener('click', function(e) {
     if (e.target === this) closePriceCalc();
 });
-
