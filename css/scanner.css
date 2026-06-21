@@ -129,42 +129,34 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* ───── FOCUS TOGGLE ROW ───── */
+        /* ───── FOCUS TOGGLE — ab scanner-controls-row ke andar inline hai ───── */
         .focus-row {
-            position: absolute;
-            top: 40px; left: 8px; right: 8px;
-            height: 38px;
-            background: rgba(10,14,26,.72);
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(255,255,255,.08);
-            border-radius: 14px;
             display: flex; align-items: center;
-            padding: 4px; gap: 4px;
-            z-index: 10;
-            box-shadow: 0 4px 12px rgba(0,0,0,.3);
+            gap: 3px;
+            background: rgba(255,255,255,.06);
+            border: 1px solid rgba(255,255,255,.1);
+            border-radius: 8px;
+            padding: 2px;
+            height: 24px;
         }
         .focus-btn {
-            flex: 1;
+            width: 26px;
             height: 100%;
             border: none;
-            border-radius: 10px;
+            border-radius: 6px;
             background: transparent;
             color: rgba(255,255,255,.55);
-            font-size: 11px;
-            font-weight: 700;
-            font-family: var(--font-main);
+            font-size: 10px;
             display: flex; align-items: center; justify-content: center;
-            gap: 5px;
             cursor: pointer;
-            transition: color .2s ease;
-            -webkit-tap-highlight-color: transparent;
+            transition: all .2s ease;
         }
         .focus-btn.active {
             color: #fff;
             background: linear-gradient(135deg, var(--accent2), var(--accent));
-            box-shadow: 0 0 12px rgba(0,229,255,.4), inset 0 0 0 1px rgba(255,255,255,.15);
+            box-shadow: 0 0 8px rgba(0,229,255,.4);
         }
-        .focus-icon { font-size: 13px; }
+        .focus-icon { font-size: 11px; }
 
         /* ───── CONTINUOUS SCAN CONTROLS ───── */
         .scanner-controls-row {
