@@ -35,12 +35,15 @@ function renderHistory() {
         return;
     }
     list.innerHTML = scanHistory.map(function(r) {
+        var manualBadge = r.isManualPrice
+            ? '<span class="h-manual-badge"><i class="fas fa-keyboard"></i> Manual</span>'
+            : '';
         return '<div class="h-item" onclick="lookupBarcode(\'' + esc(r.Barcode) + '\', true)" style="cursor:pointer" title="Tap to re-scan">' +
             '<span class="h-article">' + esc(r.Article) + '</span>' +
             '<span class="h-tag pct">' + esc(r.pctDisplay) + '</span>' +
             '<span class="h-tag orig">' + esc(r.origDisplay) + '</span>' +
             '<span class="h-tag disc">' + esc(r.discDisplay) + '</span>' +
-            '<div class="h-barcode-row"><i class="fas fa-barcode" style="margin-right:5px;opacity:.4"></i>' + esc(r.Barcode) + '</div>' +
+            '<div class="h-barcode-row"><span><i class="fas fa-barcode" style="margin-right:5px;opacity:.4"></i>' + esc(r.Barcode) + '</span>' + manualBadge + '</div>' +
         '</div>';
     }).join('');
 }
