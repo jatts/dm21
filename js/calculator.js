@@ -5,8 +5,9 @@
 let calcPct       = 0;
 let calcArticle   = '';
 let calcVal       = '';
+let calcBarcode   = ''; // exact barcode jiske liye calculator khula hai — history match ke liye
 
-function openPriceCalc(pct, article) {
+function openPriceCalc(pct, article, barcode) {
     // System keyboard band karo agar koi field focused hai —
     // calculator apna numpad use karta hai, system keyboard nahi chahiye
     if (document.activeElement && document.activeElement.blur) {
@@ -15,6 +16,7 @@ function openPriceCalc(pct, article) {
     calcPct     = pct;
     calcArticle = article;
     calcVal     = '';
+    calcBarcode = barcode || '';
     document.getElementById('calcDisplay').value        = '';
     document.getElementById('calcPctBadge').textContent = `${Math.floor(pct)}%`;
     var _ov = document.getElementById('priceCalcOverlay');
@@ -56,14 +58,43 @@ function calcEnter() {
         if (speakPct)   tts(`${Math.floor(calcPct)}%`);
         if (speakPrice) tts(`${disc}`);
 
-        // Update latest history entry with price
-        if (typeof scanHistory !== 'undefined' && scanHistory.length > 0 && scanHistory[0].discDisplay === 'N/A') {
-            scanHistory[0].origDisplay   = `${Math.floor(price)}`;
-            scanHistory[0].discDisplay   = `${disc}`;
-            scanHistory[0].savings       = saved;
-            scanHistory[0].isManualPrice = true; // taake history list mein "Manual" badge dikha sakein
-            saveScanHistory();
-            renderHistory();
+        // Update history entry — EXACT barcode match dhoondo, scanHistory[0]
+        // pe blindly depend nahi karte (agar beech mein koi aur scan ho jaye
+        // to scanHistory[0] galat entry ho sakti hai)
+        if (typeof scanHistory !== 'undefined' && scanHistory.length > 0) {
+            var targetEntry = null;
+
+            // Pehle exact barcode + abhi tak N/A wali entry dhoondo (sab se reliable)
+            if (calcBarcode) {
+                for (var i = 0; i < scanHistory.length; i++) {
+                    if (scanHistory[i].Barcode === calcBarcode && scanHistory[i].discDisplay === 'N/A') {
+                        targetEntry = scanHistory[i];
+                        break;
+                    }
+                }
+            }
+
+            // Fallback: agar barcode match na mile (purana data ya barcode missing),
+            // to sabse latest N/A wali entry update karo
+            if (!targetEntry) {
+                for (var j = 0; j < scanHistory.length; j++) {
+                    if (scanHistory[j].discDisplay === 'N/A') {
+                        targetEntry = scanHistory[j];
+                        break;
+                    }
+                }
+            }
+
+            if (targetEntry) {
+                targetEntry.origDisplay   = `${Math.floor(price)}`;
+                targetEntry.discDisplay   = `${disc}`;
+                targetEntry.savings       = saved;
+                targetEntry.isManualPrice = true; // taake history list mein "Manual" badge dikha sakein
+                saveScanHistory();
+                renderHistory();
+            } else {
+                console.warn('[Calculator] History mein matching entry nahi mili barcode:', calcBarcode);
+            }
         }
     } catch (e) {
         console.warn('calcEnter post-processing error:', e);
