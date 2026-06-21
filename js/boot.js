@@ -216,8 +216,18 @@ if (_apCard) {
         if (e.target.closest('label')) return;
         const hint = document.getElementById('calcHint');
         if (hint && hint.style.display !== 'none' && calcPct > 0) {
-            var currentBarcode = (typeof lastLookupBarcode !== 'undefined' && lastLookupBarcode) || calcBarcode;
-            openPriceCalc(calcPct, calcArticle, currentBarcode);
+            // Result card hamesha SABSE LATEST lookup ka result dikhata hai —
+            // matlab scanHistory[0] hi woh entry hai jo is card se match karti hai.
+            // (lastLookupBarcode use nahi karte kyunki woh sirf barcode string
+            // hai, index nahi — agar same barcode kisi wajah se 2 baar history
+            // mein ho to confusion ho sakta hai)
+            if (typeof scanHistory !== 'undefined' && scanHistory.length > 0 && scanHistory[0].discDisplay === 'N/A') {
+                openPriceCalc(calcPct, calcArticle, scanHistory[0].Barcode, 0);
+            } else {
+                // Fallback agar scanHistory abhi available na ho
+                var currentBarcode = (typeof lastLookupBarcode !== 'undefined' && lastLookupBarcode) || calcBarcode;
+                openPriceCalc(calcPct, calcArticle, currentBarcode);
+            }
         }
     });
 }
