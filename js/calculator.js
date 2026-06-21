@@ -2,21 +2,23 @@
    PRICE CALCULATOR
    Opens when pct found but price missing
 ═══════════════════════════════════════ */
-let calcPct       = 0;
-let calcArticle   = '';
-let calcVal       = '';
-let calcBarcode   = ''; // exact barcode jiske liye calculator khula hai — history match ke liye
+let calcPct        = 0;
+let calcArticle    = '';
+let calcVal        = '';
+let calcBarcode    = ''; // exact barcode jiske liye calculator khula hai — history match ke liye
+let calcHistoryIdx = -1; // exact history array index (jab available ho) — sabse precise match
 
-function openPriceCalc(pct, article, barcode) {
+function openPriceCalc(pct, article, barcode, historyIdx) {
     // System keyboard band karo agar koi field focused hai —
     // calculator apna numpad use karta hai, system keyboard nahi chahiye
     if (document.activeElement && document.activeElement.blur) {
         document.activeElement.blur();
     }
-    calcPct     = pct;
-    calcArticle = article;
-    calcVal     = '';
-    calcBarcode = barcode || '';
+    calcPct        = pct;
+    calcArticle    = article;
+    calcVal        = '';
+    calcBarcode    = barcode || '';
+    calcHistoryIdx = (typeof historyIdx === 'number') ? historyIdx : -1;
     document.getElementById('calcDisplay').value        = '';
     document.getElementById('calcPctBadge').textContent = `${Math.floor(pct)}%`;
     var _ov = document.getElementById('priceCalcOverlay');
@@ -58,14 +60,19 @@ function calcEnter() {
         if (speakPct)   tts(`${Math.floor(calcPct)}%`);
         if (speakPrice) tts(`${disc}`);
 
-        // Update history entry — EXACT barcode match dhoondo, scanHistory[0]
-        // pe blindly depend nahi karte (agar beech mein koi aur scan ho jaye
-        // to scanHistory[0] galat entry ho sakti hai)
+        // Update history entry — teen-level matching, sab se precise se shuru:
+        // 1) Exact array index (jab humein pata ho — sab se reliable)
+        // 2) Exact barcode + abhi tak N/A wali entry
+        // 3) Sabse latest N/A wali entry (last resort fallback)
         if (typeof scanHistory !== 'undefined' && scanHistory.length > 0) {
             var targetEntry = null;
 
-            // Pehle exact barcode + abhi tak N/A wali entry dhoondo (sab se reliable)
-            if (calcBarcode) {
+            if (calcHistoryIdx >= 0 && scanHistory[calcHistoryIdx] &&
+                scanHistory[calcHistoryIdx].Barcode === calcBarcode) {
+                targetEntry = scanHistory[calcHistoryIdx];
+            }
+
+            if (!targetEntry && calcBarcode) {
                 for (var i = 0; i < scanHistory.length; i++) {
                     if (scanHistory[i].Barcode === calcBarcode && scanHistory[i].discDisplay === 'N/A') {
                         targetEntry = scanHistory[i];
@@ -74,8 +81,6 @@ function calcEnter() {
                 }
             }
 
-            // Fallback: agar barcode match na mile (purana data ya barcode missing),
-            // to sabse latest N/A wali entry update karo
             if (!targetEntry) {
                 for (var j = 0; j < scanHistory.length; j++) {
                     if (scanHistory[j].discDisplay === 'N/A') {
