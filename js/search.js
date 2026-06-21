@@ -58,6 +58,12 @@ function doSearch() {
 }
 
 function fillAndScan(bc) {
+    // Keyboard band karo — result row pe tap karne se pehle search box
+    // focused ho sakta hai (system keyboard khula reh jata hai)
+    var si = document.getElementById('searchInput');
+    if (si) si.blur();
+    document.activeElement && document.activeElement.blur && document.activeElement.blur();
+
     showPage('scan', document.getElementById('nav-scan'));
     document.getElementById('barcodeInput').value = bc;
     lookupBarcode(bc, true); // true = search-mode (coins deduct, no totalScans++)
