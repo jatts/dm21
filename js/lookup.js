@@ -38,6 +38,8 @@ function antiCheatCheck(barcode) {
 /* ═══════════════════════════════════════
    CORE LOOKUP
 ═══════════════════════════════════════ */
+var lastLookupBarcode = ''; // current screen pe jo barcode result dikha raha hai
+
 function lookupBarcode(rawInput, searchMode) {
     const v = validateInput(rawInput);
     if (!v.ok) { showToast(v.msg, 'error'); return; }
@@ -46,6 +48,8 @@ function lookupBarcode(rawInput, searchMode) {
     // Anti-cheat check
     const ac = antiCheatCheck(v.val);
     if (!ac.allow) return;
+
+    lastLookupBarcode = v.val; // taake "Tap to enter price" baad mein bhi sahi barcode jaane
 
     // Coin check only if we're going to deduct
     if (ac.deductCoin && !window.gameBar.checkCoins()) return;
@@ -155,7 +159,7 @@ function lookupBarcode(rawInput, searchMode) {
 
     // ── If pct found but price missing → open calculator (history entry already added above) ──
     if (hasPct && !hasPrice) {
-        openPriceCalc(pN, r.Article || r.Barcode);
+        openPriceCalc(pN, r.Article || r.Barcode, r.Barcode);
     }
 
     document.getElementById('barcodeInput').value = '';
