@@ -162,64 +162,67 @@ window.showRewardedAd = async function () {
 };
 
 // Banner show/hide helpers (calculator open/close ke liye use hote hain)
-var _bannerOpInProgress = false;
-var _bannerShowRetryTimer = null;
+//
+// IMPORTANT API NOTE: @capacitor-community/admob mein banner ke 2 alag
+// "show karne" ke tareeke hain:
+//   - showBanner(options)  → NAYA banner load karta hai (poori request cycle,
+//                            slow, network pe depend karta hai)
+//   - resumeBanner()       → hideBanner() se chupaya gaya PURANA banner wapis
+//                            dikhata hai (fast, koi naya load nahi)
+//
+// Hum calculator open/close ke beech sirf show/hide kar rahe hain (naya ad
+// nahi chahiye), isliye hideBanner() + resumeBanner() ka pair use karna
+// chahiye — showBanner() sirf PEHLI baar (app load pe) use hoga.
+var _bannerLoadedOnce = false; // pehli baar showBanner() se load ho chuki hai?
 
 window.showAdBanner = async function () {
     if (!window.CapAdMob) {
         console.warn('[AdMob] showAdBanner: CapAdMob not available');
         return;
     }
-    // Pehle se koi pending retry ho to cancel karo (fresh attempt karenge)
-    if (_bannerShowRetryTimer) { clearTimeout(_bannerShowRetryTimer); _bannerShowRetryTimer = null; }
-
-    if (_bannerOpInProgress) {
-        await new Promise(function(r) { setTimeout(r, 300); });
-    }
-    _bannerOpInProgress = true;
     try {
-        console.log('[AdMob] Showing banner with unit:', AD_UNIT_BANNER);
-        await window.CapAdMob.showBanner({
-            adId: AD_UNIT_BANNER,
-            adSize: 'BANNER',
-            position: 'BOTTOM_CENTER',
-            isTesting: true
-        });
-        console.log('[AdMob] Banner show call completed');
-    } catch (e) {
-        console.warn('[AdMob] Banner show failed:', e);
-    } finally {
-        _bannerOpInProgress = false;
-    }
-
-    // SAFETY RETRY: agar pehli koshish kisi wajah se silently fail ho gayi ho
-    // (network slow, plugin race condition, etc), 1.5s baad ek aur try karo.
-    // Yeh guarantee karta hai ke banner kabhi permanently gayab na rahe.
-    _bannerShowRetryTimer = setTimeout(function() {
-        if (window.CapAdMob && !_bannerOpInProgress) {
-            console.log('[AdMob] Safety retry: re-showing banner to ensure visibility');
-            window.CapAdMob.showBanner({
+        if (_bannerLoadedOnce && typeof window.CapAdMob.resumeBanner === 'function') {
+            // Banner pehle se load ho chuki hai — sirf resume karo (fast)
+            console.log('[AdMob] Resuming previously loaded banner');
+            await window.CapAdMob.resumeBanner();
+        } else {
+            // Pehli baar — naya banner load karo
+            console.log('[AdMob] Loading banner for the first time, unit:', AD_UNIT_BANNER);
+            await window.CapAdMob.showBanner({
                 adId: AD_UNIT_BANNER,
                 adSize: 'BANNER',
                 position: 'BOTTOM_CENTER',
                 isTesting: true
-            }).catch(function(e) { console.warn('[AdMob] Safety retry failed:', e); });
+            });
+            _bannerLoadedOnce = true;
         }
-    }, 1500);
+        console.log('[AdMob] Banner show/resume completed');
+    } catch (e) {
+        console.warn('[AdMob] Banner show/resume failed:', e);
+        // Agar resumeBanner fail ho jaye (shayad pehli baar hi load nahi hui thi),
+        // fallback ke taur pe showBanner try karo
+        if (_bannerLoadedOnce) {
+            try {
+                console.log('[AdMob] Resume failed, falling back to fresh showBanner');
+                await window.CapAdMob.showBanner({
+                    adId: AD_UNIT_BANNER,
+                    adSize: 'BANNER',
+                    position: 'BOTTOM_CENTER',
+                    isTesting: true
+                });
+            } catch (e2) {
+                console.warn('[AdMob] Fallback showBanner also failed:', e2);
+            }
+        }
+    }
 };
 window.hideAdBanner = async function () {
     if (!window.CapAdMob) return;
-    // Agar koi pending "show retry" hai, usay cancel karo — warna calculator
-    // band hone se pehle hi banner wapis aa sakta hai
-    if (_bannerShowRetryTimer) { clearTimeout(_bannerShowRetryTimer); _bannerShowRetryTimer = null; }
-    _bannerOpInProgress = true;
     try {
         await window.CapAdMob.hideBanner();
         console.log('[AdMob] Banner hide call completed');
     } catch (e) {
         console.warn('[AdMob] Banner hide failed:', e);
-    } finally {
-        _bannerOpInProgress = false;
     }
 };
 
