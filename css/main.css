@@ -646,6 +646,15 @@
         .h-barcode-row {
             grid-column:1/-1; font-family:var(--font-mono); font-size:10px;
             color:var(--muted); border-top:1px solid var(--border); padding-top:5px; margin-top:2px;
+            display:flex; align-items:center; justify-content:space-between; gap:8px;
+        }
+        .h-manual-badge {
+            display:inline-flex; align-items:center; gap:4px;
+            font-family:var(--font-main); font-size:9px; font-weight:700;
+            letter-spacing:.3px; text-transform:uppercase;
+            background:rgba(255,193,7,.15); color:#ffc107;
+            border:1px solid rgba(255,193,7,.35);
+            border-radius:6px; padding:2px 7px; white-space:nowrap;
         }
         .empty-state { text-align:center; padding:40px 0; color:var(--muted); font-size:13px; }
         .empty-state i { font-size:36px; display:block; margin-bottom:10px; opacity:.3; }
