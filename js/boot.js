@@ -162,9 +162,15 @@ window.showRewardedAd = async function () {
 };
 
 // Banner show/hide helpers (calculator open/close ke liye use hote hain)
+var _bannerVisible = false; // current state track karo taake duplicate calls na ho
+
 window.showAdBanner = async function () {
     if (!window.CapAdMob) {
         console.warn('[AdMob] showAdBanner: CapAdMob not available');
+        return;
+    }
+    if (_bannerVisible) {
+        console.log('[AdMob] Banner already visible, skip duplicate show call');
         return;
     }
     try {
@@ -175,14 +181,21 @@ window.showAdBanner = async function () {
             position: 'BOTTOM_CENTER',
             isTesting: true
         });
+        _bannerVisible = true;
         console.log('[AdMob] Banner show call completed');
     } catch (e) {
         console.warn('[AdMob] Banner show failed:', e);
+        _bannerVisible = false;
     }
 };
 window.hideAdBanner = async function () {
     if (!window.CapAdMob) return;
-    try { await window.CapAdMob.hideBanner(); } catch (e) {}
+    try {
+        await window.CapAdMob.hideBanner();
+        _bannerVisible = false;
+    } catch (e) {
+        console.warn('[AdMob] Banner hide failed:', e);
+    }
 };
 
 window.addEventListener('capacitorPluginsReady', function () {
