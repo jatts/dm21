@@ -7,6 +7,11 @@ let calcArticle   = '';
 let calcVal       = '';
 
 function openPriceCalc(pct, article) {
+    // System keyboard band karo agar koi field focused hai —
+    // calculator apna numpad use karta hai, system keyboard nahi chahiye
+    if (document.activeElement && document.activeElement.blur) {
+        document.activeElement.blur();
+    }
     calcPct     = pct;
     calcArticle = article;
     calcVal     = '';
@@ -53,9 +58,10 @@ function calcEnter() {
 
         // Update latest history entry with price
         if (typeof scanHistory !== 'undefined' && scanHistory.length > 0 && scanHistory[0].discDisplay === 'N/A') {
-            scanHistory[0].origDisplay = `${Math.floor(price)}`;
-            scanHistory[0].discDisplay = `${disc}`;
-            scanHistory[0].savings     = saved;
+            scanHistory[0].origDisplay   = `${Math.floor(price)}`;
+            scanHistory[0].discDisplay   = `${disc}`;
+            scanHistory[0].savings       = saved;
+            scanHistory[0].isManualPrice = true; // taake history list mein "Manual" badge dikha sakein
             saveScanHistory();
             renderHistory();
         }
