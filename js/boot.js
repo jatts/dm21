@@ -216,7 +216,8 @@ if (_apCard) {
         if (e.target.closest('label')) return;
         const hint = document.getElementById('calcHint');
         if (hint && hint.style.display !== 'none' && calcPct > 0) {
-            openPriceCalc(calcPct, calcArticle);
+            var currentBarcode = (typeof lastLookupBarcode !== 'undefined' && lastLookupBarcode) || calcBarcode;
+            openPriceCalc(calcPct, calcArticle, currentBarcode);
         }
     });
 }
