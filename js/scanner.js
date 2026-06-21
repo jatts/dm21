@@ -59,6 +59,23 @@ document.getElementById('contScanToggle').addEventListener('change', function() 
     lbl.textContent = this.checked ? '\uD83D\uDD04 Continuous ON' : 'Continuous';
 });
 
+// FALLBACK: Android WebView mein <label> ke andar <div> hone se kabhi kabhi
+// auto-toggle (label click -> checkbox check) reliably kaam nahi karta.
+// Explicit click handler lagate hain taake toggle hamesha kaam kare.
+(function() {
+    var toggleLabel = document.querySelector('.cont-toggle-wrap .toggle');
+    var checkbox     = document.getElementById('contScanToggle');
+    if (toggleLabel && checkbox) {
+        toggleLabel.addEventListener('click', function(e) {
+            // Agar click seedha checkbox pe hi laga ho to double-toggle se bacho
+            if (e.target === checkbox) return;
+            e.preventDefault();
+            checkbox.checked = !checkbox.checked;
+            checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+    }
+})();
+
 /* ════════════════════════════
    OPEN SCANNER (start camera)
 ════════════════════════════ */
