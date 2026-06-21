@@ -159,7 +159,7 @@ function lookupBarcode(rawInput, searchMode) {
 
     // ── If pct found but price missing → open calculator (history entry already added above) ──
     if (hasPct && !hasPrice) {
-        openPriceCalc(pN, r.Article || r.Barcode, r.Barcode);
+        openPriceCalc(pN, r.Article || r.Barcode, r.Barcode, 0);
     }
 
     document.getElementById('barcodeInput').value = '';
