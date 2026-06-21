@@ -49,32 +49,42 @@ function calcEnter() {
     const price = parseFloat(calcVal);
     if (isNaN(price) || price <= 0) { showToast('Valid price likhein', 'error'); return; }
 
+    const disc  = Math.floor(price * (1 - calcPct/100));
+    const saved = Math.floor(price - disc);
+
+    // ── 1) Result card update (independent — kabhi fail na ho) ──
     try {
-        const disc  = Math.floor(price * (1 - calcPct/100));
-        const saved = Math.floor(price - disc);
-
-        // Update result cards
         document.getElementById('afterPriceValue').textContent = `${disc}`;
+    } catch (e) { console.warn('[Calculator] Result card update error:', e); }
 
-        // TTS
-        const speakPct   = document.getElementById('togglePercentage').checked;
-        const speakPrice = document.getElementById('toggleAfterPrice').checked;
-        ttsQueue.length = 0; speechSynthesis.cancel(); ttsBusy = false;
+    // ── 2) TTS (independent — yeh fail ho to bhi history update honi chahiye) ──
+    try {
+        const speakPct   = (document.getElementById('togglePercentage') || {}).checked;
+        const speakPrice = (document.getElementById('toggleAfterPrice') || {}).checked;
+        ttsQueue.length = 0;
+        if (typeof speechSynthesis !== 'undefined') {
+            try { speechSynthesis.cancel(); } catch(e2) {}
+        }
+        ttsBusy = false;
         if (speakPct)   tts(`${Math.floor(calcPct)}%`);
         if (speakPrice) tts(`${disc}`);
+    } catch (e) {
+        console.warn('[Calculator] TTS error (ignored, history update continues):', e);
+    }
 
-        // Update history entry — teen-level matching, sab se precise se shuru:
-        // 1) Exact array index (jab humein pata ho — sab se reliable)
-        // 2) Exact barcode + abhi tak N/A wali entry
-        // 3) Sabse latest N/A wali entry (last resort fallback)
+    // ── 3) History update — YEH SABSE ZAROORI HAI, isay alag try-catch mein
+    //      rakha hai taake upar ki koi bhi cheez fail ho to bhi yeh chale ──
+    try {
         if (typeof scanHistory !== 'undefined' && scanHistory.length > 0) {
             var targetEntry = null;
 
+            // 1) Exact array index (jab humein pata ho — sab se reliable)
             if (calcHistoryIdx >= 0 && scanHistory[calcHistoryIdx] &&
                 scanHistory[calcHistoryIdx].Barcode === calcBarcode) {
                 targetEntry = scanHistory[calcHistoryIdx];
             }
 
+            // 2) Exact barcode + abhi tak N/A wali entry
             if (!targetEntry && calcBarcode) {
                 for (var i = 0; i < scanHistory.length; i++) {
                     if (scanHistory[i].Barcode === calcBarcode && scanHistory[i].discDisplay === 'N/A') {
@@ -84,6 +94,7 @@ function calcEnter() {
                 }
             }
 
+            // 3) Sabse latest N/A wali entry (last resort fallback)
             if (!targetEntry) {
                 for (var j = 0; j < scanHistory.length; j++) {
                     if (scanHistory[j].discDisplay === 'N/A') {
@@ -98,14 +109,23 @@ function calcEnter() {
                 targetEntry.discDisplay   = `${disc}`;
                 targetEntry.savings       = saved;
                 targetEntry.isManualPrice = true; // taake history list mein "Manual" badge dikha sakein
-                saveScanHistory();
-                renderHistory();
+                console.log('[Calculator] History entry updated:', targetEntry.Barcode, '-> price', price, 'disc', disc);
             } else {
-                console.warn('[Calculator] History mein matching entry nahi mili barcode:', calcBarcode);
+                console.warn('[Calculator] History mein matching entry NAHI MILI. calcBarcode:', calcBarcode, 'calcHistoryIdx:', calcHistoryIdx, 'scanHistory:', JSON.stringify(scanHistory.map(function(e){return e.Barcode + ':' + e.discDisplay;})));
             }
+        } else {
+            console.warn('[Calculator] scanHistory empty ya undefined hai jab calcEnter chala!');
         }
     } catch (e) {
-        console.warn('calcEnter post-processing error:', e);
+        console.error('[Calculator] CRITICAL: History update mein exception aayi:', e);
+    }
+
+    // ── 4) Save + render — yeh BHI alag try-catch mein, history-update se independent ──
+    try {
+        saveScanHistory();
+        renderHistory();
+    } catch (e) {
+        console.error('[Calculator] CRITICAL: saveScanHistory/renderHistory mein exception:', e);
     }
 
     // Yeh hamesha chalega chahe upar kuch bhi fail ho jaye
@@ -129,7 +149,16 @@ document.getElementById('calcClearBtn').addEventListener('click', () => {
 });
 
 document.getElementById('calcEnterBtn').addEventListener('click', calcEnter);
-document.getElementById('calcCloseBtn').addEventListener('click', closePriceCalc);
+document.getElementById('calcCloseBtn').addEventListener('click', function() {
+    // User ka expected behavior: agar price type ki hai to X dabane se BHI
+    // save honi chahiye (sirf Enter se nahi) — warna price likh kar X dabane
+    // walon ki price kabhi save hi nahi hoti thi
+    if (calcVal && calcVal.length > 0) {
+        calcEnter(); // yeh khud closePriceCalc() bhi call kar deta hai
+    } else {
+        closePriceCalc();
+    }
+});
 
 // Enter key (physical keyboard) se calculate ho
 document.addEventListener('keydown', function(e) {
@@ -158,5 +187,12 @@ document.getElementById('calcDisplay').addEventListener('change', function() {
 
 // Tap outside sheet to close
 document.getElementById('priceCalcOverlay').addEventListener('click', function(e) {
-    if (e.target === this) closePriceCalc();
+    if (e.target === this) {
+        if (calcVal && calcVal.length > 0) {
+            calcEnter();
+        } else {
+            closePriceCalc();
+        }
+    }
 });
+
