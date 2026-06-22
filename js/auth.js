@@ -164,9 +164,6 @@ function gsUpdateUI(session) {
             }
         }
     }
-    // Settings logged in as
-    var settingEl = document.getElementById('settingLoggedInAs');
-    if (settingEl) settingEl.textContent = (session.name || '') + '  (' + (session.playerId || '') + ')';
     // Login status badge
     var loginStatusEl = document.getElementById('ppLoginStatus');
     if (loginStatusEl) { loginStatusEl.textContent = '● Online'; loginStatusEl.style.color = 'var(--success)'; }
