@@ -91,21 +91,41 @@
                     return;
                 }
 
+                initPluginsAsync();
+            }
+
+            // Async hissa alag function mein — taake tryInitPlugins khud
+            // sync rahe (setTimeout retry loop ke liye zaroori).
+            async function initPluginsAsync() {
+
                 var Plugins = window.Capacitor.Plugins;
                 console.log('[Capacitor] Available native plugins:', Object.keys(Plugins).join(', '));
 
-                // AdMob — direct registry se, koi CDN import nahi
+                // AdMob — direct registry se, koi CDN import nahi.
+                // IMPORTANT: initialize() async hai (native SDK boot karta
+                // hai, network call bhi ho sakti hai). Hum isay yahan
+                // AWAIT NAHI karte (taake StatusBar/App plugin setup aur
+                // capacitorPluginsReady event AdMob ke slow init ka wait
+                // na kare) — balke ek alag Promise (window.__admobInitPromise)
+                // mein store karte hain jisay showAdBanner() khud await
+                // karega banner load karne se PEHLE. Isse back-button jaldi
+                // register hota hai, aur banner bhi AdMob ready hone ke
+                // baad hi try hota hai (silently fail nahi hota).
                 if (Plugins.AdMob) {
                     window.CapAdMob = Plugins.AdMob;
-                    try {
-                        window.CapAdMob.initialize({ initializeForTesting: true });
-                        console.log('[Capacitor] AdMob initialize() called');
-                    } catch (e) {
-                        console.warn('[Capacitor] AdMob initialize failed:', e);
-                    }
+                    window.__admobInitPromise = window.CapAdMob.initialize({ initializeForTesting: true })
+                        .then(function() {
+                            console.log('[Capacitor] AdMob initialize() completed successfully');
+                            return true;
+                        })
+                        .catch(function(e) {
+                            console.warn('[Capacitor] AdMob initialize failed:', e);
+                            return false;
+                        });
                 } else {
                     console.warn('[Capacitor] Plugins.AdMob registry mein nahi mila. Keys:', Object.keys(Plugins).join(', '));
                     window.CapAdMob = null;
+                    window.__admobInitPromise = Promise.resolve(false);
                 }
 
                 // TextToSpeech — direct registry se
