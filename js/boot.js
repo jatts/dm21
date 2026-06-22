@@ -225,6 +225,32 @@ function getGamebarVisualHeight() {
     return relativeHeight > 0 ? relativeHeight : 58;
 }
 
+// RELIABLE FIX: env(safe-area-inset-top) CSS environment variable
+// Capacitor WebView mein hamesha accurate status-bar (+ notch) height
+// deta hai jab overlaysWebView:false set ho — chahe plugin version kuch
+// bhi ho. Hum ek hidden probe element banate hain jiski padding-top
+// is variable se set hoti hai, phir getComputedStyle se numeric px
+// nikaal lete hain — yeh kabhi undefined/0 nahi hota jab WebView ne
+// safe-area properly resolve kar li ho.
+function getSafeAreaInsetTopPx() {
+    var probe = document.getElementById('_safeAreaProbe');
+    if (!probe) {
+        probe = document.createElement('div');
+        probe.id = '_safeAreaProbe';
+        probe.style.position = 'fixed';
+        probe.style.top = '0';
+        probe.style.left = '0';
+        probe.style.width = '0';
+        probe.style.height = '0';
+        probe.style.paddingTop = 'env(safe-area-inset-top, 0px)';
+        probe.style.pointerEvents = 'none';
+        probe.style.visibility = 'hidden';
+        document.body.appendChild(probe);
+    }
+    var val = parseFloat(getComputedStyle(probe).paddingTop) || 0;
+    return Math.round(val);
+}
+
 async function getBannerTopMargin() {
     var statusBarHeight = getSafeAreaInsetTopPx();
 
