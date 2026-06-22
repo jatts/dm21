@@ -13,14 +13,19 @@
         if (!gb) return;
         px = Math.max(0, Math.min(px, 120)); // notch wale phones mein zyada ho sakta hai
         gb.style.paddingTop = px + 'px';
-        gb.style.height = (58 + px) + 'px';
+        // min-height (height ke bajaye) — taake 3-line center block
+        // (Lvl X / Pro Scanner / username) agar 58px se zyada jagah le
+        // to box khud expand ho jaye, overflow na ho
+        gb.style.minHeight = (58 + px) + 'px';
+        gb.style.height = 'auto';
     }
 
     function applySafeArea() {
         var gb = document.getElementById('gamebar-wrap');
         if (!gb) return;
         gb.style.paddingTop = 'env(safe-area-inset-top, 0px)';
-        gb.style.height = 'calc(58px + env(safe-area-inset-top, 0px))';
+        gb.style.minHeight = 'calc(58px + env(safe-area-inset-top, 0px))';
+        gb.style.height = 'auto';
     }
 
     async function trySetupStatusBar() {
@@ -185,40 +190,42 @@ var _bannerLoadedOnce = false; // pehli baar showBanner() se load ho chuki hai?
 
 // Banner ko gamebar ke NEECHE (top par) dikhana hai, bottom par nahi.
 //
-// IMPORTANT — yeh wajah hai ke pehle banner gamebar ke UPAR/ANDAR chadh
-// jata tha: native AdMob banner ka margin SCREEN/WINDOW ke top se measure
-// hota hai. StatusBar.getInfo().height EK UNDOCUMENTED/UNRELIABLE property
-// hai jo har @capacitor/status-bar version mein nahi milti — isliye
-// pehla approach kabhi kaam karta tha, kabhi nahi (ya kabhi 0 deta tha).
+// IMPORTANT — yeh wajah hai ke banner gamebar ke ANDAR/NEECHE overlap
+// karta tha is se pehle: #gamebar-wrap ki CSS box-height 58px hai
+// (--bar-h), LEKIN center block ("Lvl X / Pro Scanner / username")
+// 3 lines ka hai jo 58px se ZYADA visual jagah leta hai — content
+// box se overflow ho kar neeche tak dikhta hai bina box ki height
+// badhaye (koi overflow:hidden nahi hai). Isliye hardcoded 58px
+// margin asal visual gamebar se CHHOTA tha — banner us overflow
+// hue content ke beech mein aa jata tha.
 //
-// RELIABLE FIX: env(safe-area-inset-top) CSS environment variable
-// Capacitor WebView mein hamesha accurate status-bar (+ notch) height
-// deta hai jab overlaysWebView:false set ho — chahe plugin version kuch
-// bhi ho. Hum ek hidden probe element banate hain jiski padding-top
-// is variable se set hoti hai, phir getComputedStyle se numeric px
-// nikaal lete hain — yeh kabhi undefined/0 nahi hota jab WebView ne
-// safe-area properly resolve kar li ho.
-function getSafeAreaInsetTopPx() {
-    var probe = document.getElementById('_safeAreaProbe');
-    if (!probe) {
-        probe = document.createElement('div');
-        probe.id = '_safeAreaProbe';
-        probe.style.position = 'fixed';
-        probe.style.top = '0';
-        probe.style.left = '0';
-        probe.style.width = '0';
-        probe.style.height = '0';
-        probe.style.paddingTop = 'env(safe-area-inset-top, 0px)';
-        probe.style.pointerEvents = 'none';
-        probe.style.visibility = 'hidden';
-        document.body.appendChild(probe);
+// FIX: hardcoded height ki jagah, gamebar ke ANDAR ke sabse neeche
+// wale block ka ASAL rendered bottom measure karte hain — yeh
+// guaranteed real visual height degi, chahe overflow ho ya na ho.
+function getGamebarVisualHeight() {
+    var gb = document.getElementById('gamebar-wrap');
+    if (!gb) return 58;
+    var maxBottom = 0;
+    var gbTop = gb.getBoundingClientRect().top;
+    // Gamebar ke andar har direct/nested block check karo, jo bhi
+    // sabse neeche tak content render karta hai wahi asal height hai
+    var blocks = gb.querySelectorAll('.gb-block, .gb-texts, #gbUserName, #gbRankTitle, .lvl-badge');
+    for (var i = 0; i < blocks.length; i++) {
+        var r = blocks[i].getBoundingClientRect();
+        if (r.bottom > maxBottom) maxBottom = r.bottom;
     }
-    var val = parseFloat(getComputedStyle(probe).paddingTop) || 0;
-    return Math.round(val);
+    if (maxBottom === 0) {
+        // Koi block na mile to box ki apni height use karo
+        return Math.round(gb.getBoundingClientRect().height) || 58;
+    }
+    // gbTop ko subtract karte hain taake yeh gamebar-RELATIVE height ho
+    // (status-bar ka hissa already gbTop mein included hai is calculation
+    // mein nahi — woh humein alag se chahiye getBannerTopMargin mein)
+    var relativeHeight = Math.round(maxBottom - gbTop);
+    return relativeHeight > 0 ? relativeHeight : 58;
 }
 
 async function getBannerTopMargin() {
-    var GAMEBAR_BASE_HEIGHT = 58; // css/variables.css ka --bar-h
     var statusBarHeight = getSafeAreaInsetTopPx();
 
     // Agar env() abhi tak 0 de raha hai (WebView ne safe-area settle
@@ -238,9 +245,11 @@ async function getBannerTopMargin() {
     // Aakhri fallback — generic Android status bar height estimate
     if (statusBarHeight === 0) statusBarHeight = 24;
 
-    var total = Math.round(statusBarHeight + GAMEBAR_BASE_HEIGHT);
-    console.log('[AdMob] Banner margin calc — safeAreaTop:', statusBarHeight, 'gamebar:', GAMEBAR_BASE_HEIGHT, 'total:', total);
-    _showDebugBadge('safeAreaTop:' + statusBarHeight + ' margin:' + total +
+    var gamebarHeight = getGamebarVisualHeight();
+    // Extra 8px safety buffer — taake border-bottom/shadow bhi cover ho
+    var total = Math.round(statusBarHeight + gamebarHeight + 8);
+    console.log('[AdMob] Banner margin calc — safeAreaTop:', statusBarHeight, 'gamebarVisual:', gamebarHeight, 'total:', total);
+    _showDebugBadge('safeAreaTop:' + statusBarHeight + ' gbVisual:' + gamebarHeight + ' margin:' + total +
         ' App:' + !!window.CapApp + ' AdMob:' + !!window.CapAdMob + ' StatusBar:' + !!window.CapStatusBar);
     return total;
 }
