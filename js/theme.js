@@ -20,35 +20,8 @@ function setTheme(mode) {
     AppDB.set('theme', mode);
 }
 
-// Apply saved theme on boot
+// Apply saved theme on boot — default LIGHT (user manually dark kar sakta hai)
 (function() {
-    const saved = AppDB.get('theme', 'dark');
+    const saved = AppDB.get('theme', 'light');
     if (saved === 'light') setTheme('light');
 })();
-
-/* ═══════════════════════════════════════
-   RESET GAME
-═══════════════════════════════════════ */
-var _resetBtn = document.getElementById('settingResetGame');
-if (_resetBtn) {
-    _resetBtn.addEventListener('click', function() {
-        var ov = document.getElementById('resetConfirmOverlay');
-        if (ov) ov.style.display = 'flex';
-    });
-}
-
-window.doResetGame = function() {
-    var ov = document.getElementById('resetConfirmOverlay');
-    if (ov) ov.style.display = 'none';
-    if (window.gameBar) window.gameBar.resetGame();
-    AppDB.remove('coinsEarned');
-    AppDB.remove('coinsSpent');
-    AppDB.remove('scanStreak');
-    if (typeof updateStatsPage === 'function') updateStatsPage();
-    if (typeof showToast === 'function') showToast('Game reset ho gaya', 'info');
-};
-
-window.cancelReset = function() {
-    var ov = document.getElementById('resetConfirmOverlay');
-    if (ov) ov.style.display = 'none';
-};
