@@ -8,11 +8,15 @@ var _privRow = document.getElementById('privacyPolicyRow');
 if (_privRow) _privRow.addEventListener('click', function() {
     var o = document.getElementById('privacyOverlay');
     if (o) o.style.display = 'flex';
+    // Banner hide karo taake overlay upar saaf dikhe
+    if (typeof window.hideAdBanner === 'function') window.hideAdBanner();
 });
 var _privBack = document.getElementById('privacyBackBtn');
 if (_privBack) _privBack.addEventListener('click', function() {
     var o = document.getElementById('privacyOverlay');
     if (o) o.style.display = 'none';
+    // Banner wapis show karo
+    if (typeof window.showAdBanner === 'function') window.showAdBanner();
 });
 
 // Terms overlay
@@ -20,11 +24,13 @@ var _termsRow = document.getElementById('termsRow');
 if (_termsRow) _termsRow.addEventListener('click', function() {
     var o = document.getElementById('termsOverlay');
     if (o) o.style.display = 'flex';
+    if (typeof window.hideAdBanner === 'function') window.hideAdBanner();
 });
 var _termsBack = document.getElementById('termsBackBtn');
 if (_termsBack) _termsBack.addEventListener('click', function() {
     var o = document.getElementById('termsOverlay');
     if (o) o.style.display = 'none';
+    if (typeof window.showAdBanner === 'function') window.showAdBanner();
 });
 
 // Watch Ad button
@@ -35,18 +41,10 @@ if (_watchAdBtn) _watchAdBtn.addEventListener('click', function() {
     }
 });
 
-// Logout handler sync.js mein hai (gsFlushEvents ke saath)
-// Yahan sirf settingLoggedInAs label update karte hain
-var _session = (typeof gsGetSession === 'function') ? gsGetSession() : null;
-if (_session) {
-    var _loggedEl = document.getElementById('settingLoggedInAs');
-    if (_loggedEl) _loggedEl.textContent = (_session.name || '') + '  (' + (_session.playerId || '') + ')';
-}
-
 /* ═══════════════════════════════════════
    APP VERSION INFO
 ═══════════════════════════════════════ */
 (function() {
     var verEl = document.getElementById('appVersionText');
-    if (verEl) verEl.textContent = 'v2.1.0';
+    if (verEl) verEl.textContent = 'v2.0.0';
 })();
