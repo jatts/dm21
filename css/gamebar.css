@@ -1,6 +1,6 @@
         /* ───── GAMEBAR ───── */
         #gamebar-wrap {
-            height: var(--bar-h);
+            min-height: var(--bar-h);
             flex-shrink: 0;
             background: linear-gradient(90deg, #0d1117 0%, #131929 50%, #0d1117 100%);
             border-bottom: 1px solid var(--border);
