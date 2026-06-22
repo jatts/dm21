@@ -5,6 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Discount Manager</title>
 
+    <!-- Theme ka FLASH rokne ke liye — page paint hone se pehle hi
+         saved theme (ya default LIGHT) class lagate hain. AppDB abhi
+         load nahi hua, isliye localStorage seedha try karte hain
+         (jo AppDB ka hi sync fallback hai). -->
+    <script>
+        (function() {
+            try {
+                var t = localStorage.getItem('theme');
+                if (t === null || t === 'light') {
+                    document.documentElement.classList.add('light');
+                }
+            } catch (e) {
+                document.documentElement.classList.add('light');
+            }
+        })();
+    </script>
+
     <!-- Vendor CSS: FontAwesome icons -->
     <link rel="stylesheet" href="assets/css/all.min.css">
 
@@ -683,12 +700,6 @@
         <div class="settings-section">
             <div class="settings-section-title">Account</div>
 
-            <div class="setting-row">
-                <div class="setting-info">
-                    <div class="setting-name"><i class="fas fa-user" style="margin-right:6px;color:var(--accent2)"></i>Logged in as</div>
-                    <div class="setting-desc" id="settingLoggedInAs">---</div>
-                </div>
-            </div>
             <div class="setting-row" style="cursor:pointer" id="logoutRow">
                 <div class="setting-info">
                     <div class="setting-name" style="color:var(--danger)"><i class="fas fa-sign-out-alt" style="margin-right:6px"></i>Logout</div>
@@ -709,13 +720,6 @@
                 <button class="setting-btn" style="border-color:rgba(0,229,255,.3);color:var(--accent);background:rgba(0,229,255,.08)" id="settingWatchAd">
                     <i class="fas fa-play-circle"></i> Watch
                 </button>
-            </div>
-            <div class="setting-row" style="cursor:pointer" id="settingResetGame">
-                <div class="setting-info">
-                    <div class="setting-name" style="color:var(--warning)"><i class="fas fa-redo" style="margin-right:6px"></i>Reset Game</div>
-                    <div class="setting-desc">Coins, scans aur level reset karein</div>
-                </div>
-                <i class="fas fa-chevron-right" style="color:var(--muted);font-size:13px"></i>
             </div>
         </div>
 
@@ -754,7 +758,7 @@
         </div>
 
         <div class="version-info">
-            Discount Manager &nbsp;·&nbsp; <span id="appVersionText">v2.1.0</span> &nbsp;·&nbsp; DB <span id="dbVerFooter">v?</span>
+            Discount Manager &nbsp;·&nbsp; <span id="appVersionText">v2.0.0</span> &nbsp;·&nbsp; DB <span id="dbVerFooter">v?</span>
         </div>
     </div>
 
@@ -954,21 +958,6 @@
         <div style="display:flex;gap:10px">
             <button onclick="cancelLogout()" style="flex:1;padding:12px;border-radius:12px;background:var(--card);border:1px solid var(--border);color:var(--text);font-size:14px;font-weight:600;cursor:pointer">Rehne do</button>
             <button onclick="doLogout()" style="flex:1;padding:12px;border-radius:12px;background:var(--danger);border:none;color:#fff;font-size:14px;font-weight:600;cursor:pointer">Logout</button>
-        </div>
-    </div>
-</div>
-
-<!-- Reset Game Confirm -->
-<div id="resetConfirmOverlay" style="display:none;position:fixed;inset:0;z-index:9700;background:rgba(0,0,0,0.6);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:24px">
-    <div style="background:var(--surface);border-radius:20px;padding:24px;width:100%;max-width:320px;border:1px solid var(--border);box-shadow:0 20px 60px rgba(0,0,0,0.5)">
-        <div style="width:48px;height:48px;border-radius:50%;background:rgba(255,145,0,0.12);display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
-            <i class="fas fa-redo" style="font-size:20px;color:var(--warn)"></i>
-        </div>
-        <div style="text-align:center;margin-bottom:8px;font-size:16px;font-weight:700;color:var(--text)">Reset karein?</div>
-        <div style="text-align:center;font-size:13px;color:var(--muted);margin-bottom:24px;line-height:1.5">Coins, Level aur Scans sab reset ho jayenge</div>
-        <div style="display:flex;gap:10px">
-            <button onclick="cancelReset()" style="flex:1;padding:12px;border-radius:12px;background:var(--card);border:1px solid var(--border);color:var(--text);font-size:14px;font-weight:600;cursor:pointer">Cancel</button>
-            <button onclick="doResetGame()" style="flex:1;padding:12px;border-radius:12px;background:var(--warn);border:none;color:#000;font-size:14px;font-weight:600;cursor:pointer">Reset</button>
         </div>
     </div>
 </div>
