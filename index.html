@@ -314,17 +314,6 @@
     <!-- ── SCAN PAGE ── -->
     <div class="page active" id="page-scan">
 
-        <!-- ── EVENT BANNER ── -->
-        <div id="eventBanner" class="event-banner">
-            <div class="event-banner-track">
-                <span class="event-banner-dot"></span>
-                <div class="event-banner-marquee">
-                    <span id="eventBannerText">Loading...</span>
-                    <span id="eventBannerText2">Loading...</span>
-                </div>
-            </div>
-        </div>
-
         <div class="scan-hero">
             <!-- Hidden barcode input (populated by scanner or search) -->
             <input type="text" id="barcodeInput" style="display:none"
@@ -752,9 +741,16 @@
                 <span id="dbVerBadge" style="font-family:var(--font-mono);font-size:11px;color:var(--accent);background:rgba(0,229,255,0.1);padding:2px 8px;border-radius:20px;flex-shrink:0">v?</span>
             </div>
 
-
-
-
+            <!-- ── EVENT BANNER (Database card ke neeche move kiya) ── -->
+            <div id="eventBanner" class="event-banner event-banner--settings">
+                <div class="event-banner-track">
+                    <span class="event-banner-dot"></span>
+                    <div class="event-banner-marquee">
+                        <span id="eventBannerText">Loading...</span>
+                        <span id="eventBannerText2">Loading...</span>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="version-info">
