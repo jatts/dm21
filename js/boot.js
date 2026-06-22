@@ -184,18 +184,46 @@ window.showRewardedAd = async function () {
 var _bannerLoadedOnce = false; // pehli baar showBanner() se load ho chuki hai?
 
 // Banner ko gamebar ke NEECHE (top par) dikhana hai, bottom par nahi.
-// IMPORTANT: native AdMob banner WINDOW/SCREEN ke top se margin leta hai,
-// WebView ke content area se nahi. Status bar overlay disable hone ke
-// baad WebView khud status-bar ke neeche se shuru hoti hai, isliye
-// gamebar ki sirf HEIGHT use karna kaafi nahi — status bar ka inset bhi
-// margin mein add hona chahiye. rect.bottom (gamebar ke bottom edge ka
-// window-top se distance) yeh dono automatically include kar deta hai.
-function getBannerTopMargin() {
-    var gb = document.getElementById('gamebar-wrap');
-    if (!gb) return 58; // fallback agar gamebar element na mile
-    var rect = gb.getBoundingClientRect();
-    var margin = Math.round(rect.bottom);
-    return margin > 0 ? margin : 58;
+//
+// IMPORTANT — yeh wajah hai ke pehle banner gamebar ke UPAR chadh jata tha:
+// native AdMob banner ka margin SCREEN/WINDOW ke top se measure hota hai.
+// Lekin jab StatusBar.setOverlaysWebView({overlay:false}) apply hota hai,
+// WebView khud status-bar ke neeche shift ho jaati hai — WebView ke apne
+// coordinate system mein iska matlab gamebar ka top phir bhi ~0 hi dikhta
+// hai (getBoundingClientRect WebView-relative hai, screen-relative nahi).
+// Isliye sirf gamebar ki height lena status-bar ka inset MISS kar deta hai.
+//
+// Fix: StatusBar.getInfo() native call se ASAL status-bar height (dp mein)
+// milti hai — yeh seedha banner ke margin format se compatible hai.
+// Total margin = status-bar height + gamebar height.
+async function getBannerTopMargin() {
+    var GAMEBAR_BASE_HEIGHT = 58; // css/variables.css ka --bar-h
+    var statusBarHeight = 0;
+    if (window.CapStatusBar && typeof window.CapStatusBar.getInfo === 'function') {
+        try {
+            var info = await window.CapStatusBar.getInfo();
+            if (info && typeof info.height === 'number' && info.height > 0) {
+                statusBarHeight = info.height;
+            }
+        } catch (e) {
+            console.warn('[AdMob] StatusBar.getInfo() failed, falling back:', e);
+        }
+    }
+    if (statusBarHeight === 0) {
+        // Fallback agar getInfo() na mile ya 0 de — gamebar ka actual
+        // measured top use karo (jo kam se kam kuch estimate de sakta hai)
+        var gb = document.getElementById('gamebar-wrap');
+        if (gb) {
+            var rect = gb.getBoundingClientRect();
+            // Agar height already status-bar padding included hai (boot.js
+            // ke applyStatusBarPadding se), to extra mat jodo
+            var extra = Math.round(rect.height) - GAMEBAR_BASE_HEIGHT;
+            statusBarHeight = extra > 0 ? extra : 24; // 24px generic safe fallback
+        } else {
+            statusBarHeight = 24;
+        }
+    }
+    return Math.round(statusBarHeight + GAMEBAR_BASE_HEIGHT);
 }
 
 window.showAdBanner = async function () {
@@ -203,7 +231,7 @@ window.showAdBanner = async function () {
         console.warn('[AdMob] showAdBanner: CapAdMob not available');
         return;
     }
-    var topMargin = getBannerTopMargin();
+    var topMargin = await getBannerTopMargin();
     try {
         if (_bannerLoadedOnce && typeof window.CapAdMob.resumeBanner === 'function') {
             // Banner pehle se load ho chuki hai — sirf resume karo (fast)
