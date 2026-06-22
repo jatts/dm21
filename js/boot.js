@@ -72,7 +72,15 @@
         }
     }, 500);
 
-    window.setStatusBarHeight = function(px) { applyStatusBarPadding(parseInt(px) || 0); };
+    window.setStatusBarHeight = function(px) {
+    applyStatusBarPadding(parseInt(px) || 0);
+    // Privacy/Terms overlay headers bhi same padding do
+    var ph = document.getElementById('privacyHeader');
+    var th = document.getElementById('termsHeader');
+    var safePx = Math.max(0, Math.min(parseInt(px) || 0, 80));
+    if (ph) ph.style.paddingTop = (16 + safePx) + 'px';
+    if (th) th.style.paddingTop = (16 + safePx) + 'px';
+};
 })();
 
 /* ═══════════════════════════════════════
@@ -283,3 +291,120 @@ setTimeout(function() {
         if (typeof gsFlushEvents === 'function') gsFlushEvents(null);
     }
 }, 4000);
+
+/* ═══════════════════════════════════════
+   BACK BUTTON — Hardware Android back key
+   Capacitor @capacitor/app plugin se handle
+═══════════════════════════════════════ */
+(function() {
+    // Custom exit confirm overlay — browser confirm() use nahi karte
+    // (WebView mein block ho sakta hai)
+    function showExitConfirm() {
+        var overlay = document.getElementById('exitConfirmOverlay');
+        if (overlay) { overlay.style.display = 'flex'; return; }
+
+        overlay = document.createElement('div');
+        overlay.id = 'exitConfirmOverlay';
+        overlay.style.cssText = [
+            'position:fixed;inset:0;z-index:99999',
+            'background:rgba(0,0,0,0.75);backdrop-filter:blur(6px)',
+            'display:flex;align-items:center;justify-content:center'
+        ].join(';');
+
+        overlay.innerHTML = [
+            '<div style="',
+                'background:linear-gradient(135deg,#0d1117,#131929);',
+                'border:1.5px solid rgba(0,229,255,0.25);',
+                'border-radius:24px;padding:32px 28px 24px;',
+                'max-width:300px;width:88%;text-align:center;',
+                'box-shadow:0 0 40px rgba(0,229,255,0.1);',
+            '">',
+                '<div style="font-size:36px;margin-bottom:12px">👋</div>',
+                '<div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:8px">App band karein?</div>',
+                '<div style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:24px">',
+                    'Discount Manager se bahar ja rahe hain',
+                '</div>',
+                '<div style="display:flex;gap:12px">',
+                    '<button id="exitCancelBtn" style="',
+                        'flex:1;padding:12px;border-radius:14px;',
+                        'background:rgba(255,255,255,0.06);',
+                        'border:1px solid rgba(255,255,255,0.12);',
+                        'color:rgba(255,255,255,0.7);font-size:14px;font-weight:700;cursor:pointer',
+                    '">Ruko</button>',
+                    '<button id="exitConfirmBtn" style="',
+                        'flex:1;padding:12px;border-radius:14px;',
+                        'background:linear-gradient(135deg,#7c4dff,#00e5ff);',
+                        'border:none;color:#fff;font-size:14px;font-weight:700;cursor:pointer',
+                    '">Band Karo</button>',
+                '</div>',
+            '</div>'
+        ].join('');
+
+        document.body.appendChild(overlay);
+
+        document.getElementById('exitCancelBtn').onclick = function() {
+            overlay.style.display = 'none';
+        };
+        document.getElementById('exitConfirmBtn').onclick = function() {
+            // Capacitor App plugin se exit
+            if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+                window.Capacitor.Plugins.App.exitApp();
+            } else {
+                window.close(); // browser fallback
+            }
+        };
+
+        // Overlay tap to cancel
+        overlay.onclick = function(e) {
+            if (e.target === overlay) overlay.style.display = 'none';
+        };
+    }
+
+    // Back button intercept — Capacitor native App plugin
+    function setupBackButton() {
+        if (!window.Capacitor || !window.Capacitor.Plugins || !window.Capacitor.Plugins.App) return;
+
+        window.Capacitor.Plugins.App.addListener('backButton', function() {
+            // Agar koi overlay khuli ho, pehle woh band karo
+            var exitOverlay = document.getElementById('exitConfirmOverlay');
+            if (exitOverlay && exitOverlay.style.display !== 'none') {
+                exitOverlay.style.display = 'none';
+                return;
+            }
+            if (document.getElementById('rewardSuccessOverlay') &&
+                document.getElementById('rewardSuccessOverlay').style.display === 'flex') {
+                if (typeof closeRewardSuccess === 'function') closeRewardSuccess();
+                return;
+            }
+            if (document.getElementById('privacyOverlay') &&
+                document.getElementById('privacyOverlay').style.display === 'flex') {
+                document.getElementById('privacyOverlay').style.display = 'none';
+                return;
+            }
+            if (document.getElementById('termsOverlay') &&
+                document.getElementById('termsOverlay').style.display === 'flex') {
+                document.getElementById('termsOverlay').style.display = 'none';
+                return;
+            }
+            if (document.getElementById('priceCalcOverlay') &&
+                document.getElementById('priceCalcOverlay').classList.contains('open')) {
+                if (typeof closePriceCalc === 'function') closePriceCalc();
+                return;
+            }
+            if (document.getElementById('scannerBox') &&
+                document.getElementById('scannerBox').classList.contains('open')) {
+                if (typeof closeScanner === 'function') closeScanner();
+                return;
+            }
+            // Home page pe ho — exit confirm dikhao
+            showExitConfirm();
+        });
+    }
+
+    // Plugin ready hone ka wait karo
+    if (window.__capacitorReady) {
+        setupBackButton();
+    } else {
+        window.addEventListener('capacitorPluginsReady', setupBackButton);
+    }
+})();
