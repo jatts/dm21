@@ -183,11 +183,25 @@ window.showRewardedAd = async function () {
 // chahiye — showBanner() sirf PEHLI baar (app load pe) use hoga.
 var _bannerLoadedOnce = false; // pehli baar showBanner() se load ho chuki hai?
 
+// Banner ko gamebar ke NEECHE (top par) dikhana hai, bottom par nahi.
+// Gamebar ki height fixed nahi hai — notch/punch-hole phones par
+// boot.js ke StatusBar fix se badh jaati hai (58px + safe-area-inset-top).
+// Isliye margin hardcode nahi karte, gamebar ka ACTUAL rendered height
+// nikaal kar wahi top-margin ke taur pe banner ko dete hain — taake
+// banner hamesha gamebar ke theek neeche bina overlap ke aaye.
+function getBannerTopMargin() {
+    var gb = document.getElementById('gamebar-wrap');
+    if (!gb) return 58; // fallback agar gamebar element na mile
+    var rect = gb.getBoundingClientRect();
+    return Math.round(rect.height) || 58;
+}
+
 window.showAdBanner = async function () {
     if (!window.CapAdMob) {
         console.warn('[AdMob] showAdBanner: CapAdMob not available');
         return;
     }
+    var topMargin = getBannerTopMargin();
     try {
         if (_bannerLoadedOnce && typeof window.CapAdMob.resumeBanner === 'function') {
             // Banner pehle se load ho chuki hai — sirf resume karo (fast)
@@ -195,11 +209,12 @@ window.showAdBanner = async function () {
             await window.CapAdMob.resumeBanner();
         } else {
             // Pehli baar — naya banner load karo
-            console.log('[AdMob] Loading banner for the first time, unit:', AD_UNIT_BANNER);
+            console.log('[AdMob] Loading banner for the first time, unit:', AD_UNIT_BANNER, 'top margin:', topMargin);
             await window.CapAdMob.showBanner({
                 adId: AD_UNIT_BANNER,
                 adSize: 'BANNER',
-                position: 'BOTTOM_CENTER',
+                position: 'TOP_CENTER',
+                margin: topMargin,
                 isTesting: true
             });
             _bannerLoadedOnce = true;
@@ -215,7 +230,8 @@ window.showAdBanner = async function () {
                 await window.CapAdMob.showBanner({
                     adId: AD_UNIT_BANNER,
                     adSize: 'BANNER',
-                    position: 'BOTTOM_CENTER',
+                    position: 'TOP_CENTER',
+                    margin: topMargin,
                     isTesting: true
                 });
             } catch (e2) {
@@ -237,13 +253,16 @@ window.hideAdBanner = async function () {
 window.addEventListener('capacitorPluginsReady', function () {
     console.log('[Capacitor] Plugins ready event fired. CapAdMob:', !!window.CapAdMob, 'CapTTS:', !!window.CapTTS, 'CapStatusBar:', !!window.CapStatusBar);
     _setupAdMobListeners();
-    window.showAdBanner();
+    // 300ms wait — StatusBar safe-area settle hone ka time (boot.js status-bar
+    // fix ke setTimeout chain 100ms+150ms use karta hai). Isse gamebar-wrap
+    // ki final height mil jaati hai jab banner ka top margin nikalte hain.
+    setTimeout(function() { window.showAdBanner(); }, 300);
 });
 
 // Agar plugins already ready hain (race condition safety)
 if (window.__capacitorReady) {
     _setupAdMobListeners();
-    window.showAdBanner();
+    setTimeout(function() { window.showAdBanner(); }, 300);
 }
 
 /* ═══════════════════════════════════════
