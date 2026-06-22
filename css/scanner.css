@@ -282,6 +282,18 @@
             flex-shrink: 0;
         }
 
+        /* Settings page App Info card-list ke andar fit hone ke liye —
+           full-bleed negative margins hata kar card jaisa rounded box banaya */
+        .event-banner.event-banner--settings {
+            width: 100%;
+            height: 38px;
+            margin: 0 0 6px 0;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+        }
+
         /* left fade edge */
         .event-banner::before,
         .event-banner::after {
@@ -299,6 +311,14 @@
         .event-banner::after {
             right: 0;
             background: linear-gradient(270deg, var(--bg) 0%, transparent 100%);
+        }
+        /* Settings card ka background var(--card) hai, var(--bg) se mismatch
+           hoga — fade-edge color yahan card-background se match karte hain */
+        .event-banner--settings::before {
+            background: linear-gradient(90deg, var(--card) 0%, transparent 100%);
+        }
+        .event-banner--settings::after {
+            background: linear-gradient(270deg, var(--card) 0%, transparent 100%);
         }
 
         .event-banner-track {
@@ -365,3 +385,5 @@
         }
         html.light .event-banner::before { background: linear-gradient(90deg, var(--bg) 0%, transparent 100%); }
         html.light .event-banner::after  { background: linear-gradient(270deg, var(--bg) 0%, transparent 100%); }
+        html.light .event-banner--settings::before { background: linear-gradient(90deg, var(--card) 0%, transparent 100%); }
+        html.light .event-banner--settings::after  { background: linear-gradient(270deg, var(--card) 0%, transparent 100%); }
