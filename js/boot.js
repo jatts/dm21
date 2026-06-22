@@ -185,45 +185,62 @@ var _bannerLoadedOnce = false; // pehli baar showBanner() se load ho chuki hai?
 
 // Banner ko gamebar ke NEECHE (top par) dikhana hai, bottom par nahi.
 //
-// IMPORTANT — yeh wajah hai ke pehle banner gamebar ke UPAR chadh jata tha:
-// native AdMob banner ka margin SCREEN/WINDOW ke top se measure hota hai.
-// Lekin jab StatusBar.setOverlaysWebView({overlay:false}) apply hota hai,
-// WebView khud status-bar ke neeche shift ho jaati hai — WebView ke apne
-// coordinate system mein iska matlab gamebar ka top phir bhi ~0 hi dikhta
-// hai (getBoundingClientRect WebView-relative hai, screen-relative nahi).
-// Isliye sirf gamebar ki height lena status-bar ka inset MISS kar deta hai.
+// IMPORTANT — yeh wajah hai ke pehle banner gamebar ke UPAR/ANDAR chadh
+// jata tha: native AdMob banner ka margin SCREEN/WINDOW ke top se measure
+// hota hai. StatusBar.getInfo().height EK UNDOCUMENTED/UNRELIABLE property
+// hai jo har @capacitor/status-bar version mein nahi milti — isliye
+// pehla approach kabhi kaam karta tha, kabhi nahi (ya kabhi 0 deta tha).
 //
-// Fix: StatusBar.getInfo() native call se ASAL status-bar height (dp mein)
-// milti hai — yeh seedha banner ke margin format se compatible hai.
-// Total margin = status-bar height + gamebar height.
+// RELIABLE FIX: env(safe-area-inset-top) CSS environment variable
+// Capacitor WebView mein hamesha accurate status-bar (+ notch) height
+// deta hai jab overlaysWebView:false set ho — chahe plugin version kuch
+// bhi ho. Hum ek hidden probe element banate hain jiski padding-top
+// is variable se set hoti hai, phir getComputedStyle se numeric px
+// nikaal lete hain — yeh kabhi undefined/0 nahi hota jab WebView ne
+// safe-area properly resolve kar li ho.
+function getSafeAreaInsetTopPx() {
+    var probe = document.getElementById('_safeAreaProbe');
+    if (!probe) {
+        probe = document.createElement('div');
+        probe.id = '_safeAreaProbe';
+        probe.style.position = 'fixed';
+        probe.style.top = '0';
+        probe.style.left = '0';
+        probe.style.width = '0';
+        probe.style.height = '0';
+        probe.style.paddingTop = 'env(safe-area-inset-top, 0px)';
+        probe.style.pointerEvents = 'none';
+        probe.style.visibility = 'hidden';
+        document.body.appendChild(probe);
+    }
+    var val = parseFloat(getComputedStyle(probe).paddingTop) || 0;
+    return Math.round(val);
+}
+
 async function getBannerTopMargin() {
     var GAMEBAR_BASE_HEIGHT = 58; // css/variables.css ka --bar-h
-    var statusBarHeight = 0;
-    if (window.CapStatusBar && typeof window.CapStatusBar.getInfo === 'function') {
+    var statusBarHeight = getSafeAreaInsetTopPx();
+
+    // Agar env() abhi tak 0 de raha hai (WebView ne safe-area settle
+    // nahi ki, ya overlay disable nahi hua), StatusBar.getInfo() try
+    // karo as a secondary source (kuch versions mein available hoti hai)
+    if (statusBarHeight === 0 && window.CapStatusBar && typeof window.CapStatusBar.getInfo === 'function') {
         try {
             var info = await window.CapStatusBar.getInfo();
             if (info && typeof info.height === 'number' && info.height > 0) {
                 statusBarHeight = info.height;
             }
         } catch (e) {
-            console.warn('[AdMob] StatusBar.getInfo() failed, falling back:', e);
+            console.warn('[AdMob] StatusBar.getInfo() failed:', e);
         }
     }
-    if (statusBarHeight === 0) {
-        // Fallback agar getInfo() na mile ya 0 de — gamebar ka actual
-        // measured top use karo (jo kam se kam kuch estimate de sakta hai)
-        var gb = document.getElementById('gamebar-wrap');
-        if (gb) {
-            var rect = gb.getBoundingClientRect();
-            // Agar height already status-bar padding included hai (boot.js
-            // ke applyStatusBarPadding se), to extra mat jodo
-            var extra = Math.round(rect.height) - GAMEBAR_BASE_HEIGHT;
-            statusBarHeight = extra > 0 ? extra : 24; // 24px generic safe fallback
-        } else {
-            statusBarHeight = 24;
-        }
-    }
-    return Math.round(statusBarHeight + GAMEBAR_BASE_HEIGHT);
+
+    // Aakhri fallback — generic Android status bar height estimate
+    if (statusBarHeight === 0) statusBarHeight = 24;
+
+    var total = Math.round(statusBarHeight + GAMEBAR_BASE_HEIGHT);
+    console.log('[AdMob] Banner margin calc — safeAreaTop:', statusBarHeight, 'gamebar:', GAMEBAR_BASE_HEIGHT, 'total:', total);
+    return total;
 }
 
 window.showAdBanner = async function () {
