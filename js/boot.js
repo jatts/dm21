@@ -240,7 +240,28 @@ async function getBannerTopMargin() {
 
     var total = Math.round(statusBarHeight + GAMEBAR_BASE_HEIGHT);
     console.log('[AdMob] Banner margin calc — safeAreaTop:', statusBarHeight, 'gamebar:', GAMEBAR_BASE_HEIGHT, 'total:', total);
+    _showDebugBadge('safeAreaTop:' + statusBarHeight + ' margin:' + total +
+        ' App:' + !!window.CapApp + ' AdMob:' + !!window.CapAdMob + ' StatusBar:' + !!window.CapStatusBar);
     return total;
+}
+
+// On-screen debug badge — sirf ?debug=1 URL param ke saath dikhta hai.
+// Logcat/adb ki zaroorat nahi, seedha phone pe values verify kar sakte
+// hain ke plugins mile ya nahi, aur margin kya calculate hua.
+function _showDebugBadge(text) {
+    try {
+        if (location.search.indexOf('debug=1') === -1) return;
+        var badge = document.getElementById('_dmDebugBadge');
+        if (!badge) {
+            badge = document.createElement('div');
+            badge.id = '_dmDebugBadge';
+            badge.style.cssText = 'position:fixed;left:4px;bottom:4px;z-index:999999;' +
+                'background:rgba(0,0,0,0.85);color:#0f0;font-size:10px;font-family:monospace;' +
+                'padding:4px 6px;border-radius:6px;max-width:96vw;word-break:break-all;pointer-events:none';
+            document.body.appendChild(badge);
+        }
+        badge.textContent = text;
+    } catch (e) {}
 }
 
 window.showAdBanner = async function () {
@@ -483,6 +504,10 @@ setTimeout(function() {
         // hai to plugin native side missing hai — console mein
         // diagnostic chhod kar fallback pe switch karte hain.
         var AppPlugin = window.CapApp || (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App);
+
+        if (typeof _showDebugBadge === 'function') {
+            _showDebugBadge('App plugin: ' + (AppPlugin ? 'FOUND ✓' : 'MISSING ✗'));
+        }
 
         if (!AppPlugin) {
             console.warn('[BackButton] Capacitor App plugin nahi mila — native hardware back intercept nahi ho payega. ' +
