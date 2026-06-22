@@ -188,42 +188,8 @@ window.showRewardedAd = async function () {
 // chahiye — showBanner() sirf PEHLI baar (app load pe) use hoga.
 var _bannerLoadedOnce = false; // pehli baar showBanner() se load ho chuki hai?
 
-// Banner ko gamebar ke NEECHE (top par) dikhana hai, bottom par nahi.
-//
-// IMPORTANT FIX — pichla approach status-bar height ko ALAG SE add kar
-// raha tha gamebar ki height ke saath, jo DOUBLE-COUNTING thi: CSS
-// `box-sizing: border-box` (globally set hai) ki wajah se gamebar-wrap
-// ki paddingTop (jo status-bar ke barabar set hoti hai applyStatusBarPadding/
-// applySafeArea se) ALREADY uski getBoundingClientRect().height mein
-// shamil hoti hai. Status-bar ko alag se add karna usay 2 baar count
-// kar raha tha — isi liye margin 134 jaisa bohot zyada aaya tha, jiski
-// wajah se banner asal gamebar se kaafi neeche (DISCOUNT%/AFTER% cards
-// ke andar) chali gayi thi.
-//
-// SAHI FORMULA: sirf gamebar-wrap ki khud ki getBoundingClientRect().height
-// — yeh already status-bar padding + content dono cover karti hai.
-//
-// MARGIN_CORRECTION: @capacitor-community/admob ke TOP_CENTER margin
-// mein known inconsistencies hain (plugin GitHub issue #153, #270) jo
-// device/version ke hisaab se margin ko expected se zyada/kam apply
-// karte hain. Yeh EK number screenshot ke result ke mutabiq tune kiya
-// ja sakta hai — manfi value margin ko kam karegi.
-// Tuning history:
-//   corr:0   → margin:97 → banner thodi NEECHE (cards ke header cut)
-//   corr:-18 → margin:78 → banner thodi UPAR (gamebar COINS/SCANS cut)
-//   corr:-9  → margin:~88 → in dono ke beech, expected sahi position
-var MARGIN_CORRECTION = -9;
-
-async function getBannerTopMargin() {
-    var gb = document.getElementById('gamebar-wrap');
-    var gamebarHeight = gb ? Math.round(gb.getBoundingClientRect().height) : 96;
-
-    var total = Math.round(gamebarHeight + MARGIN_CORRECTION);
-    console.log('[AdMob] Banner margin calc — gamebarHeight(incl. statusbar padding):', gamebarHeight, 'correction:', MARGIN_CORRECTION, 'total:', total);
-    _showDebugBadge('gbH:' + gamebarHeight + ' corr:' + MARGIN_CORRECTION + ' margin:' + total +
-        ' App:' + !!window.CapApp + ' AdMob:' + !!window.CapAdMob + ' StatusBar:' + !!window.CapStatusBar);
-    return total;
-}
+// Banner ko screen ke bilkul TOP par dikhana hai (status bar ke neeche).
+// margin: 0 — koi gamebar calculation nahi, seedha top position.
 
 // On-screen debug badge — HAMESHA khud dikhta hai app khulte waqt,
 // kisi URL param ki zaroorat nahi. Har update pe apna hide-timer reset
@@ -269,7 +235,6 @@ window.showAdBanner = async function () {
             console.warn('[AdMob] AdMob init wait failed:', e);
         }
     }
-    var topMargin = await getBannerTopMargin();
     try {
         if (_bannerLoadedOnce && typeof window.CapAdMob.resumeBanner === 'function') {
             // Banner pehle se load ho chuki hai — sirf resume karo (fast)
@@ -277,18 +242,18 @@ window.showAdBanner = async function () {
             await window.CapAdMob.resumeBanner();
         } else {
             // Pehli baar — naya banner load karo
-            console.log('[AdMob] Loading banner for the first time, unit:', AD_UNIT_BANNER, 'top margin:', topMargin);
+            console.log('[AdMob] Loading banner for the first time, unit:', AD_UNIT_BANNER);
             await window.CapAdMob.showBanner({
                 adId: AD_UNIT_BANNER,
                 adSize: 'BANNER',
                 position: 'TOP_CENTER',
-                margin: topMargin,
+                margin: 0,
                 isTesting: true
             });
             _bannerLoadedOnce = true;
         }
         console.log('[AdMob] Banner show/resume completed');
-        _showDebugBadge('Banner: SHOWN ✓ margin:' + topMargin);
+        _showDebugBadge('Banner: SHOWN ✓ TOP margin:0');
     } catch (e) {
         console.warn('[AdMob] Banner show/resume failed:', e);
         _showDebugBadge('Banner FAILED: ' + (e && e.message ? e.message : JSON.stringify(e)));
@@ -301,10 +266,10 @@ window.showAdBanner = async function () {
                     adId: AD_UNIT_BANNER,
                     adSize: 'BANNER',
                     position: 'TOP_CENTER',
-                    margin: topMargin,
+                    margin: 0,
                     isTesting: true
                 });
-                _showDebugBadge('Banner: SHOWN (fallback) ✓ margin:' + topMargin);
+                _showDebugBadge('Banner: SHOWN (fallback) ✓ TOP margin:0');
             } catch (e2) {
                 console.warn('[AdMob] Fallback showBanner also failed:', e2);
                 _showDebugBadge('Banner FALLBACK FAILED: ' + (e2 && e2.message ? e2.message : JSON.stringify(e2)));
