@@ -346,9 +346,11 @@ setTimeout(function() {
             overlay.style.display = 'none';
         };
         document.getElementById('exitConfirmBtn').onclick = function() {
-            // Capacitor App plugin se exit
-            if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
-                window.Capacitor.Plugins.App.exitApp();
+            // Capacitor App plugin se exit — pehle registry-checked CapApp,
+            // phir direct registry, phir browser fallback
+            var AppPlugin = window.CapApp || (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App);
+            if (AppPlugin && typeof AppPlugin.exitApp === 'function') {
+                AppPlugin.exitApp();
             } else {
                 window.close(); // browser fallback
             }
@@ -360,44 +362,82 @@ setTimeout(function() {
         };
     }
 
-    // Back button intercept — Capacitor native App plugin
-    function setupBackButton() {
-        if (!window.Capacitor || !window.Capacitor.Plugins || !window.Capacitor.Plugins.App) return;
+    // Saare overlays check karke band karta hai agar koi khula ho.
+    // Return true matlab kuch band hua (back press "consumed" ho gaya),
+    // false matlab koi overlay khula nahi tha (home page pe hain).
+    function closeOpenOverlayIfAny() {
+        var exitOverlay = document.getElementById('exitConfirmOverlay');
+        if (exitOverlay && exitOverlay.style.display !== 'none') {
+            exitOverlay.style.display = 'none';
+            return true;
+        }
+        if (document.getElementById('rewardSuccessOverlay') &&
+            document.getElementById('rewardSuccessOverlay').style.display === 'flex') {
+            if (typeof closeRewardSuccess === 'function') closeRewardSuccess();
+            return true;
+        }
+        if (document.getElementById('privacyOverlay') &&
+            document.getElementById('privacyOverlay').style.display === 'flex') {
+            document.getElementById('privacyOverlay').style.display = 'none';
+            return true;
+        }
+        if (document.getElementById('termsOverlay') &&
+            document.getElementById('termsOverlay').style.display === 'flex') {
+            document.getElementById('termsOverlay').style.display = 'none';
+            return true;
+        }
+        if (document.getElementById('priceCalcOverlay') &&
+            document.getElementById('priceCalcOverlay').classList.contains('open')) {
+            if (typeof closePriceCalc === 'function') closePriceCalc();
+            return true;
+        }
+        if (document.getElementById('scannerBox') &&
+            document.getElementById('scannerBox').classList.contains('open')) {
+            if (typeof closeScanner === 'function') closeScanner();
+            return true;
+        }
+        return false;
+    }
 
-        window.Capacitor.Plugins.App.addListener('backButton', function() {
-            // Agar koi overlay khuli ho, pehle woh band karo
-            var exitOverlay = document.getElementById('exitConfirmOverlay');
-            if (exitOverlay && exitOverlay.style.display !== 'none') {
-                exitOverlay.style.display = 'none';
-                return;
-            }
-            if (document.getElementById('rewardSuccessOverlay') &&
-                document.getElementById('rewardSuccessOverlay').style.display === 'flex') {
-                if (typeof closeRewardSuccess === 'function') closeRewardSuccess();
-                return;
-            }
-            if (document.getElementById('privacyOverlay') &&
-                document.getElementById('privacyOverlay').style.display === 'flex') {
-                document.getElementById('privacyOverlay').style.display = 'none';
-                return;
-            }
-            if (document.getElementById('termsOverlay') &&
-                document.getElementById('termsOverlay').style.display === 'flex') {
-                document.getElementById('termsOverlay').style.display = 'none';
-                return;
-            }
-            if (document.getElementById('priceCalcOverlay') &&
-                document.getElementById('priceCalcOverlay').classList.contains('open')) {
-                if (typeof closePriceCalc === 'function') closePriceCalc();
-                return;
-            }
-            if (document.getElementById('scannerBox') &&
-                document.getElementById('scannerBox').classList.contains('open')) {
-                if (typeof closeScanner === 'function') closeScanner();
-                return;
-            }
-            // Home page pe ho — exit confirm dikhao
-            showExitConfirm();
+    // Back press hone par yahi single entry point chalta hai —
+    // chahe Capacitor App plugin se aaye ya popstate fallback se.
+    function handleBackPress() {
+        if (closeOpenOverlayIfAny()) return;
+        // Home page pe ho — exit confirm dikhao
+        showExitConfirm();
+    }
+
+    // Back button intercept — Capacitor native App plugin (asal tareeqa)
+    function setupBackButton() {
+        // window.CapApp index.html ke bridge-detection block mein
+        // registry se assign hota hai (agar native build mein
+        // @capacitor/app install/sync hai). Agar yeh null/undefined
+        // hai to plugin native side missing hai — console mein
+        // diagnostic chhod kar fallback pe switch karte hain.
+        var AppPlugin = window.CapApp || (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App);
+
+        if (!AppPlugin) {
+            console.warn('[BackButton] Capacitor App plugin nahi mila — native hardware back intercept nahi ho payega. ' +
+                'popstate fallback use ho raha hai (browser/preview mode ya plugin missing).');
+            setupPopstateFallback();
+            return;
+        }
+
+        console.log('[BackButton] Capacitor App plugin mila — backButton listener register ho raha hai.');
+        AppPlugin.addListener('backButton', handleBackPress);
+    }
+
+    // Fallback jab native App plugin available nahi (browser preview,
+    // ya native build mein @capacitor/app sync nahi hua). History mein
+    // ek dummy entry push karte hain taake browser/WebView back-press
+    // par turant exit hone ke bajaye humein pehle intercept mile.
+    function setupPopstateFallback() {
+        try { history.pushState({ dmGuard: true }, ''); } catch (e) {}
+        window.addEventListener('popstate', function() {
+            var overlayClosed = closeOpenOverlayIfAny();
+            // Guard entry dobara push karo taake next back-press bhi intercept ho
+            try { history.pushState({ dmGuard: true }, ''); } catch (e) {}
+            if (!overlayClosed) showExitConfirm();
         });
     }
 
