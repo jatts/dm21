@@ -189,7 +189,15 @@ window.showRewardedAd = async function () {
 var _bannerLoadedOnce = false; // pehli baar showBanner() se load ho chuki hai?
 
 // Banner ko screen ke bilkul TOP par dikhana hai (status bar ke neeche).
-// margin: 0 — koi gamebar calculation nahi, seedha top position.
+// gamebar-wrap.getBoundingClientRect().top = exact status bar height at runtime.
+// Yeh native AdMob banner ko status bar ke neeche correctly position karta hai.
+function getBannerTopMargin() {
+    var gb = document.getElementById('gamebar-wrap');
+    var statusBarHeight = gb ? Math.round(gb.getBoundingClientRect().top) : 0;
+    console.log('[AdMob] Status bar height (gamebar top):', statusBarHeight);
+    _showDebugBadge('sbH:' + statusBarHeight + ' App:' + !!window.CapApp + ' AdMob:' + !!window.CapAdMob);
+    return statusBarHeight;
+}
 
 // On-screen debug badge — HAMESHA khud dikhta hai app khulte waqt,
 // kisi URL param ki zaroorat nahi. Har update pe apna hide-timer reset
@@ -242,18 +250,19 @@ window.showAdBanner = async function () {
             await window.CapAdMob.resumeBanner();
         } else {
             // Pehli baar — naya banner load karo
-            console.log('[AdMob] Loading banner for the first time, unit:', AD_UNIT_BANNER);
+            var topMargin = getBannerTopMargin();
+            console.log('[AdMob] Loading banner for the first time, unit:', AD_UNIT_BANNER, 'margin:', topMargin);
             await window.CapAdMob.showBanner({
                 adId: AD_UNIT_BANNER,
                 adSize: 'BANNER',
                 position: 'TOP_CENTER',
-                margin: 0,
+                margin: topMargin,
                 isTesting: true
             });
             _bannerLoadedOnce = true;
         }
         console.log('[AdMob] Banner show/resume completed');
-        _showDebugBadge('Banner: SHOWN ✓ TOP margin:0');
+        _showDebugBadge('Banner: SHOWN ✓ TOP margin:' + topMargin);
     } catch (e) {
         console.warn('[AdMob] Banner show/resume failed:', e);
         _showDebugBadge('Banner FAILED: ' + (e && e.message ? e.message : JSON.stringify(e)));
@@ -262,14 +271,15 @@ window.showAdBanner = async function () {
         if (_bannerLoadedOnce) {
             try {
                 console.log('[AdMob] Resume failed, falling back to fresh showBanner');
+                var topMargin = getBannerTopMargin();
                 await window.CapAdMob.showBanner({
                     adId: AD_UNIT_BANNER,
                     adSize: 'BANNER',
                     position: 'TOP_CENTER',
-                    margin: 0,
+                    margin: topMargin,
                     isTesting: true
                 });
-                _showDebugBadge('Banner: SHOWN (fallback) ✓ TOP margin:0');
+                _showDebugBadge('Banner: SHOWN (fallback) ✓ TOP margin:' + topMargin);
             } catch (e2) {
                 console.warn('[AdMob] Fallback showBanner also failed:', e2);
                 _showDebugBadge('Banner FALLBACK FAILED: ' + (e2 && e2.message ? e2.message : JSON.stringify(e2)));
