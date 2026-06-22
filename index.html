@@ -751,35 +751,60 @@
 
     <!-- Privacy Policy Overlay -->
     <div id="privacyOverlay" style="display:none;position:fixed;inset:0;z-index:9500;background:var(--bg);flex-direction:column">
-        <div style="display:flex;align-items:center;gap:12px;padding:16px;border-bottom:1px solid var(--border);flex-shrink:0">
+        <div id="privacyHeader" style="display:flex;align-items:center;gap:12px;padding:16px;padding-top:calc(16px + env(safe-area-inset-top, 0px));border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg)">
             <button id="privacyBackBtn" style="width:34px;height:34px;border-radius:50%;background:var(--card);border:1px solid var(--border);color:var(--text);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center"><i class="fas fa-arrow-left"></i></button>
             <span style="font-size:15px;font-weight:700"><i class="fas fa-shield-alt" style="margin-right:6px;color:var(--accent2)"></i>Privacy Policy</span>
         </div>
         <div style="flex:1;overflow-y:auto;padding:20px 16px;line-height:1.7;font-size:13px;color:var(--text)">
             <p style="color:var(--muted);font-size:11px;margin-bottom:16px">Last updated: June 2026</p>
+
             <h3 style="color:var(--accent2);font-size:13px;margin-bottom:8px">1. Introduction</h3>
-            <p style="margin-bottom:14px">Discount Manager ("App") aapki privacy ki hifazat karna chahta hai. Ye policy batati hai ke hum kya data collect karte hain aur kaise use karte hain.</p>
-            <h3 style="color:var(--accent2);font-size:13px;margin-bottom:8px">2. Data Collection</h3>
-            <p style="margin-bottom:8px"><strong>Local Data (Device par stored):</strong></p>
-            <ul style="margin-bottom:14px;padding-left:18px;color:var(--muted)">
-                <li style="margin-bottom:4px">Scan history (sirf aapke device par)</li>
+            <p style="margin-bottom:14px">Discount Manager ("App") is provided by its developer as a free, ad-supported service. By using this App, you agree to this Privacy Policy. This policy explains what data is collected, how it is used, and your rights.</p>
+
+            <h3 style="color:var(--accent2);font-size:13px;margin-bottom:8px">2. Information We Collect</h3>
+            <p style="margin-bottom:8px"><strong>a) Data stored locally on your device only:</strong></p>
+            <ul style="margin-bottom:12px;padding-left:18px;color:var(--muted)">
+                <li style="margin-bottom:4px">Scan history and manually entered prices</li>
                 <li style="margin-bottom:4px">Game progress — coins, level, total scans</li>
-                <li style="margin-bottom:4px">Player profile — naam aur avatar (aapke device par)</li>
-                <li style="margin-bottom:4px">App settings aur theme preference</li>
+                <li style="margin-bottom:4px">Player profile — name and avatar</li>
+                <li style="margin-bottom:4px">App settings and theme preferences</li>
             </ul>
-            <p style="margin-bottom:14px">Ye sab data sirf aapke device ki local storage mein save hota hai. Koi bhi server par upload nahi hota.</p>
-            <h3 style="color:var(--accent2);font-size:13px;margin-bottom:8px">3. Camera Permission</h3>
-            <p style="margin-bottom:14px">App barcode scan karne ke liye camera access maangti hai. Camera sirf scanning ke waqt use hoti hai. Koi bhi photo save ya upload nahi hoti.</p>
-            <h3 style="color:var(--accent2);font-size:13px;margin-bottom:8px">4. Internet Connection</h3>
-            <p style="margin-bottom:14px">App ko internet chahiye kyunki database aur app files online server se load hoti hain. Hum koi bhi personal data internet par nahi bhejtay.</p>
-            <h3 style="color:var(--accent2);font-size:13px;margin-bottom:8px">5. Advertisements</h3>
-            <p style="margin-bottom:14px">Future mein app mein ads (AdMob) shamil ho sakti hain. Ads ke liye Google ki apni privacy policy apply hogi.</p>
-            <h3 style="color:var(--accent2);font-size:13px;margin-bottom:8px">6. Third-Party Services</h3>
-            <p style="margin-bottom:14px">App Google Fonts aur FontAwesome icons use karti hai jo internet se load hoti hain.</p>
-            <h3 style="color:var(--accent2);font-size:13px;margin-bottom:8px">7. Children</h3>
-            <p style="margin-bottom:14px">Ye app kisi bhi age group ke liye safe hai. Hum 13 saal se kam umra ke bachon ka koi personal data collect nahi karte.</p>
-            <h3 style="color:var(--accent2);font-size:13px;margin-bottom:8px">8. Contact</h3>
-            <p style="margin-bottom:14px">Privacy se related koi sawal ho toh app developer se app store ke zariye rabta karein.</p>
+            <p style="margin-bottom:8px">This data is stored only on your device and is not collected or uploaded to any server by the developer.</p>
+            <p style="margin-bottom:8px"><strong>b) Data collected by third-party services:</strong></p>
+            <p style="margin-bottom:14px">The App uses the following third-party services which may collect data to identify you or for analytics and advertising purposes. Please review their respective privacy policies.</p>
+
+            <h3 style="color:var(--accent2);font-size:13px;margin-bottom:8px">3. Advertising — Google AdMob</h3>
+            <p style="margin-bottom:8px">This App uses <strong>Google AdMob</strong> to display advertisements, including banner ads and rewarded video ads. AdMob may collect and use data including:</p>
+            <ul style="margin-bottom:12px;padding-left:18px;color:var(--muted)">
+                <li style="margin-bottom:4px">Device identifiers (Advertising ID)</li>
+                <li style="margin-bottom:4px">IP address and approximate location</li>
+                <li style="margin-bottom:4px">App usage and interaction data</li>
+            </ul>
+            <p style="margin-bottom:8px">This data is used to serve personalized or non-personalized ads. You can opt out of personalized advertising through your device settings:</p>
+            <p style="margin-bottom:14px;color:var(--muted);font-size:11px">Android: Settings → Google → Ads → Opt out of Ads Personalization</p>
+            <p style="margin-bottom:14px">Google AdMob Privacy Policy: <span style="color:var(--accent)">policies.google.com/privacy</span></p>
+
+            <h3 style="color:var(--accent2);font-size:13px;margin-bottom:8px">4. Camera Permission</h3>
+            <p style="margin-bottom:14px">The App requires camera access to scan barcodes. The camera is used only during active scanning. No photos or videos are stored or transmitted.</p>
+
+            <h3 style="color:var(--accent2);font-size:13px;margin-bottom:8px">5. Internet Access</h3>
+            <p style="margin-bottom:14px">The App requires an internet connection to load the product database and app interface hosted on GitHub Pages, and to display advertisements. No personal user data is sent over the internet by the developer.</p>
+
+            <h3 style="color:var(--accent2);font-size:13px;margin-bottom:8px">6. Google Play Services</h3>
+            <p style="margin-bottom:14px">The App uses Google Play Services which may collect device and usage data. Privacy policy: <span style="color:var(--accent)">policies.google.com/privacy</span></p>
+
+            <h3 style="color:var(--accent2);font-size:13px;margin-bottom:8px">7. Log Data</h3>
+            <p style="margin-bottom:14px">In case of an error, third-party services (such as AdMob) may collect Log Data including your device IP address, device name, OS version, and timestamps. This is used for diagnostic purposes only.</p>
+
+            <h3 style="color:var(--accent2);font-size:13px;margin-bottom:8px">8. Children's Privacy</h3>
+            <p style="margin-bottom:14px">This App does not knowingly collect personal information from children under 13. If you believe your child has provided personal data, please contact us to have it removed.</p>
+
+            <h3 style="color:var(--accent2);font-size:13px;margin-bottom:8px">9. Changes to This Policy</h3>
+            <p style="margin-bottom:14px">This Privacy Policy may be updated from time to time. Changes are effective immediately upon posting. Continued use of the App constitutes acceptance of the updated policy.</p>
+
+            <h3 style="color:var(--accent2);font-size:13px;margin-bottom:8px">10. Contact</h3>
+            <p style="margin-bottom:14px">For privacy-related questions, please contact: <span style="color:var(--accent)">rizwanchohdary@gmail.com</span></p>
+
             <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-top:8px;text-align:center">
                 <div style="font-size:11px;color:var(--muted)">By using Discount Manager, you agree to this Privacy Policy.</div>
             </div>
@@ -788,7 +813,7 @@
 
     <!-- Terms of Use Overlay -->
     <div id="termsOverlay" style="display:none;position:fixed;inset:0;z-index:9500;background:var(--bg);flex-direction:column">
-        <div style="display:flex;align-items:center;gap:12px;padding:16px;border-bottom:1px solid var(--border);flex-shrink:0">
+        <div id="termsHeader" style="display:flex;align-items:center;gap:12px;padding:16px;padding-top:calc(16px + env(safe-area-inset-top, 0px));border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg)">
             <button id="termsBackBtn" style="width:34px;height:34px;border-radius:50%;background:var(--card);border:1px solid var(--border);color:var(--text);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center"><i class="fas fa-arrow-left"></i></button>
             <span style="font-size:15px;font-weight:700"><i class="fas fa-file-alt" style="margin-right:6px;color:var(--accent)"></i>Terms of Use</span>
         </div>
