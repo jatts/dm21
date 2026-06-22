@@ -184,16 +184,18 @@ window.showRewardedAd = async function () {
 var _bannerLoadedOnce = false; // pehli baar showBanner() se load ho chuki hai?
 
 // Banner ko gamebar ke NEECHE (top par) dikhana hai, bottom par nahi.
-// Gamebar ki height fixed nahi hai — notch/punch-hole phones par
-// boot.js ke StatusBar fix se badh jaati hai (58px + safe-area-inset-top).
-// Isliye margin hardcode nahi karte, gamebar ka ACTUAL rendered height
-// nikaal kar wahi top-margin ke taur pe banner ko dete hain — taake
-// banner hamesha gamebar ke theek neeche bina overlap ke aaye.
+// IMPORTANT: native AdMob banner WINDOW/SCREEN ke top se margin leta hai,
+// WebView ke content area se nahi. Status bar overlay disable hone ke
+// baad WebView khud status-bar ke neeche se shuru hoti hai, isliye
+// gamebar ki sirf HEIGHT use karna kaafi nahi — status bar ka inset bhi
+// margin mein add hona chahiye. rect.bottom (gamebar ke bottom edge ka
+// window-top se distance) yeh dono automatically include kar deta hai.
 function getBannerTopMargin() {
     var gb = document.getElementById('gamebar-wrap');
     if (!gb) return 58; // fallback agar gamebar element na mile
     var rect = gb.getBoundingClientRect();
-    return Math.round(rect.height) || 58;
+    var margin = Math.round(rect.bottom);
+    return margin > 0 ? margin : 58;
 }
 
 window.showAdBanner = async function () {
@@ -253,16 +255,16 @@ window.hideAdBanner = async function () {
 window.addEventListener('capacitorPluginsReady', function () {
     console.log('[Capacitor] Plugins ready event fired. CapAdMob:', !!window.CapAdMob, 'CapTTS:', !!window.CapTTS, 'CapStatusBar:', !!window.CapStatusBar);
     _setupAdMobListeners();
-    // 300ms wait — StatusBar safe-area settle hone ka time (boot.js status-bar
+    // 500ms wait — StatusBar safe-area settle hone ka time (boot.js status-bar
     // fix ke setTimeout chain 100ms+150ms use karta hai). Isse gamebar-wrap
-    // ki final height mil jaati hai jab banner ka top margin nikalte hain.
-    setTimeout(function() { window.showAdBanner(); }, 300);
+    // ki final position/height mil jaati hai jab banner ka top margin nikalte hain.
+    setTimeout(function() { window.showAdBanner(); }, 500);
 });
 
 // Agar plugins already ready hain (race condition safety)
 if (window.__capacitorReady) {
     _setupAdMobListeners();
-    setTimeout(function() { window.showAdBanner(); }, 300);
+    setTimeout(function() { window.showAdBanner(); }, 500);
 }
 
 /* ═══════════════════════════════════════
@@ -398,11 +400,13 @@ setTimeout(function() {
         if (document.getElementById('privacyOverlay') &&
             document.getElementById('privacyOverlay').style.display === 'flex') {
             document.getElementById('privacyOverlay').style.display = 'none';
+            if (typeof window.showAdBanner === 'function') window.showAdBanner();
             return true;
         }
         if (document.getElementById('termsOverlay') &&
             document.getElementById('termsOverlay').style.display === 'flex') {
             document.getElementById('termsOverlay').style.display = 'none';
+            if (typeof window.showAdBanner === 'function') window.showAdBanner();
             return true;
         }
         if (document.getElementById('priceCalcOverlay') &&
