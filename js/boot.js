@@ -245,12 +245,12 @@ async function getBannerTopMargin() {
     return total;
 }
 
-// On-screen debug badge — sirf ?debug=1 URL param ke saath dikhta hai.
-// Logcat/adb ki zaroorat nahi, seedha phone pe values verify kar sakte
-// hain ke plugins mile ya nahi, aur margin kya calculate hua.
+// On-screen debug badge — HAMESHA khud dikhta hai app khulte waqt,
+// kisi URL param ki zaroorat nahi. 15 second baad khud chhup jata hai
+// taake permanently raaste mein na rahe. Logcat/adb ki zaroorat nahi —
+// seedha phone pe values verify kar sakte hain ke plugins mile ya nahi.
 function _showDebugBadge(text) {
     try {
-        if (location.search.indexOf('debug=1') === -1) return;
         var badge = document.getElementById('_dmDebugBadge');
         if (!badge) {
             badge = document.createElement('div');
@@ -259,6 +259,10 @@ function _showDebugBadge(text) {
                 'background:rgba(0,0,0,0.85);color:#0f0;font-size:10px;font-family:monospace;' +
                 'padding:4px 6px;border-radius:6px;max-width:96vw;word-break:break-all;pointer-events:none';
             document.body.appendChild(badge);
+            // 15 second baad khud hide ho jaye
+            setTimeout(function() {
+                if (badge && badge.parentNode) badge.parentNode.removeChild(badge);
+            }, 15000);
         }
         badge.textContent = text;
     } catch (e) {}
