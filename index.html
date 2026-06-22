@@ -107,6 +107,15 @@
                     console.warn('[Capacitor] Plugins.StatusBar registry mein nahi mila.');
                 }
 
+                // App — direct registry se (hardware back button ke liye zaroori)
+                if (Plugins.App) {
+                    window.CapApp = Plugins.App;
+                    console.log('[Capacitor] App plugin assigned from registry — backButton listener ready hoga');
+                } else {
+                    console.warn('[Capacitor] Plugins.App registry mein nahi mila. Native Android project mein @capacitor/app install/sync nahi hai. Keys:', Object.keys(Plugins).join(', '));
+                    window.CapApp = null;
+                }
+
                 window.__capacitorReady = true;
                 window.dispatchEvent(new Event('capacitorPluginsReady'));
             }
