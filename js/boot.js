@@ -190,92 +190,33 @@ var _bannerLoadedOnce = false; // pehli baar showBanner() se load ho chuki hai?
 
 // Banner ko gamebar ke NEECHE (top par) dikhana hai, bottom par nahi.
 //
-// IMPORTANT — yeh wajah hai ke banner gamebar ke ANDAR/NEECHE overlap
-// karta tha is se pehle: #gamebar-wrap ki CSS box-height 58px hai
-// (--bar-h), LEKIN center block ("Lvl X / Pro Scanner / username")
-// 3 lines ka hai jo 58px se ZYADA visual jagah leta hai — content
-// box se overflow ho kar neeche tak dikhta hai bina box ki height
-// badhaye (koi overflow:hidden nahi hai). Isliye hardcoded 58px
-// margin asal visual gamebar se CHHOTA tha — banner us overflow
-// hue content ke beech mein aa jata tha.
+// IMPORTANT FIX — pichla approach status-bar height ko ALAG SE add kar
+// raha tha gamebar ki height ke saath, jo DOUBLE-COUNTING thi: CSS
+// `box-sizing: border-box` (globally set hai) ki wajah se gamebar-wrap
+// ki paddingTop (jo status-bar ke barabar set hoti hai applyStatusBarPadding/
+// applySafeArea se) ALREADY uski getBoundingClientRect().height mein
+// shamil hoti hai. Status-bar ko alag se add karna usay 2 baar count
+// kar raha tha — isi liye margin 134 jaisa bohot zyada aaya tha, jiski
+// wajah se banner asal gamebar se kaafi neeche (DISCOUNT%/AFTER% cards
+// ke andar) chali gayi thi.
 //
-// FIX: hardcoded height ki jagah, gamebar ke ANDAR ke sabse neeche
-// wale block ka ASAL rendered bottom measure karte hain — yeh
-// guaranteed real visual height degi, chahe overflow ho ya na ho.
-function getGamebarVisualHeight() {
-    var gb = document.getElementById('gamebar-wrap');
-    if (!gb) return 58;
-    var maxBottom = 0;
-    var gbTop = gb.getBoundingClientRect().top;
-    // Gamebar ke andar har direct/nested block check karo, jo bhi
-    // sabse neeche tak content render karta hai wahi asal height hai
-    var blocks = gb.querySelectorAll('.gb-block, .gb-texts, #gbUserName, #gbRankTitle, .lvl-badge');
-    for (var i = 0; i < blocks.length; i++) {
-        var r = blocks[i].getBoundingClientRect();
-        if (r.bottom > maxBottom) maxBottom = r.bottom;
-    }
-    if (maxBottom === 0) {
-        // Koi block na mile to box ki apni height use karo
-        return Math.round(gb.getBoundingClientRect().height) || 58;
-    }
-    // gbTop ko subtract karte hain taake yeh gamebar-RELATIVE height ho
-    // (status-bar ka hissa already gbTop mein included hai is calculation
-    // mein nahi — woh humein alag se chahiye getBannerTopMargin mein)
-    var relativeHeight = Math.round(maxBottom - gbTop);
-    return relativeHeight > 0 ? relativeHeight : 58;
-}
-
-// RELIABLE FIX: env(safe-area-inset-top) CSS environment variable
-// Capacitor WebView mein hamesha accurate status-bar (+ notch) height
-// deta hai jab overlaysWebView:false set ho — chahe plugin version kuch
-// bhi ho. Hum ek hidden probe element banate hain jiski padding-top
-// is variable se set hoti hai, phir getComputedStyle se numeric px
-// nikaal lete hain — yeh kabhi undefined/0 nahi hota jab WebView ne
-// safe-area properly resolve kar li ho.
-function getSafeAreaInsetTopPx() {
-    var probe = document.getElementById('_safeAreaProbe');
-    if (!probe) {
-        probe = document.createElement('div');
-        probe.id = '_safeAreaProbe';
-        probe.style.position = 'fixed';
-        probe.style.top = '0';
-        probe.style.left = '0';
-        probe.style.width = '0';
-        probe.style.height = '0';
-        probe.style.paddingTop = 'env(safe-area-inset-top, 0px)';
-        probe.style.pointerEvents = 'none';
-        probe.style.visibility = 'hidden';
-        document.body.appendChild(probe);
-    }
-    var val = parseFloat(getComputedStyle(probe).paddingTop) || 0;
-    return Math.round(val);
-}
+// SAHI FORMULA: sirf gamebar-wrap ki khud ki getBoundingClientRect().height
+// — yeh already status-bar padding + content dono cover karti hai.
+//
+// MARGIN_CORRECTION: @capacitor-community/admob ke TOP_CENTER margin
+// mein known inconsistencies hain (plugin GitHub issue #153, #270) jo
+// device/version ke hisaab se margin ko expected se zyada/kam apply
+// karte hain. Yeh EK number screenshot ke result ke mutabiq tune kiya
+// ja sakta hai — manfi value margin ko kam karegi.
+var MARGIN_CORRECTION = 0;
 
 async function getBannerTopMargin() {
-    var statusBarHeight = getSafeAreaInsetTopPx();
+    var gb = document.getElementById('gamebar-wrap');
+    var gamebarHeight = gb ? Math.round(gb.getBoundingClientRect().height) : 96;
 
-    // Agar env() abhi tak 0 de raha hai (WebView ne safe-area settle
-    // nahi ki, ya overlay disable nahi hua), StatusBar.getInfo() try
-    // karo as a secondary source (kuch versions mein available hoti hai)
-    if (statusBarHeight === 0 && window.CapStatusBar && typeof window.CapStatusBar.getInfo === 'function') {
-        try {
-            var info = await window.CapStatusBar.getInfo();
-            if (info && typeof info.height === 'number' && info.height > 0) {
-                statusBarHeight = info.height;
-            }
-        } catch (e) {
-            console.warn('[AdMob] StatusBar.getInfo() failed:', e);
-        }
-    }
-
-    // Aakhri fallback — generic Android status bar height estimate
-    if (statusBarHeight === 0) statusBarHeight = 24;
-
-    var gamebarHeight = getGamebarVisualHeight();
-    // Extra 8px safety buffer — taake border-bottom/shadow bhi cover ho
-    var total = Math.round(statusBarHeight + gamebarHeight + 8);
-    console.log('[AdMob] Banner margin calc — safeAreaTop:', statusBarHeight, 'gamebarVisual:', gamebarHeight, 'total:', total);
-    _showDebugBadge('safeAreaTop:' + statusBarHeight + ' gbVisual:' + gamebarHeight + ' margin:' + total +
+    var total = Math.round(gamebarHeight + MARGIN_CORRECTION);
+    console.log('[AdMob] Banner margin calc — gamebarHeight(incl. statusbar padding):', gamebarHeight, 'correction:', MARGIN_CORRECTION, 'total:', total);
+    _showDebugBadge('gbH:' + gamebarHeight + ' corr:' + MARGIN_CORRECTION + ' margin:' + total +
         ' App:' + !!window.CapApp + ' AdMob:' + !!window.CapAdMob + ' StatusBar:' + !!window.CapStatusBar);
     return total;
 }
