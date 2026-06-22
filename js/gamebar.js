@@ -119,14 +119,6 @@ window.gameBar = {
         // Sync ad event to GS immediately
         gsQueueEvent('ad');
     },
-    resetGame() {
-        coins = 30; totalScans = 0; level = 1;
-        AppDB.remove('coinsSpent');
-        AppDB.remove('coinsEarned');
-        AppDB.remove('adsWatched');
-        updateGameBar();
-        showToast('Game reset ho gaya', 'info');
-    },
     // watchAd: button click se lookup.js ka global watchAd() call hota hai
     // (yeh internal method sirf reference/fallback ke liye hai)
     watchAd() {
