@@ -255,9 +255,9 @@ async function getBannerTopMargin() {
 }
 
 // On-screen debug badge — HAMESHA khud dikhta hai app khulte waqt,
-// kisi URL param ki zaroorat nahi. 15 second baad khud chhup jata hai
-// taake permanently raaste mein na rahe. Logcat/adb ki zaroorat nahi —
-// seedha phone pe values verify kar sakte hain ke plugins mile ya nahi.
+// kisi URL param ki zaroorat nahi. Har update pe apna hide-timer reset
+// karta hai (25 second), taake banner load hone mein extra time lage
+// to bhi aakhri/sabse zaroori message (banner shown/failed) miss na ho.
 function _showDebugBadge(text) {
     try {
         var badge = document.getElementById('_dmDebugBadge');
@@ -268,11 +268,14 @@ function _showDebugBadge(text) {
                 'background:rgba(0,0,0,0.85);color:#0f0;font-size:10px;font-family:monospace;' +
                 'padding:4px 6px;border-radius:6px;max-width:96vw;word-break:break-all;pointer-events:none';
             document.body.appendChild(badge);
-            // 15 second baad khud hide ho jaye
-            setTimeout(function() {
-                if (badge && badge.parentNode) badge.parentNode.removeChild(badge);
-            }, 15000);
         }
+        // Har update pe purana hide-timer cancel karke naya 25-second
+        // timer lagate hain — taake aakhri message ko poora dikhne ka
+        // waqt mile
+        if (badge._hideTimer) clearTimeout(badge._hideTimer);
+        badge._hideTimer = setTimeout(function() {
+            if (badge && badge.parentNode) badge.parentNode.removeChild(badge);
+        }, 25000);
         badge.textContent = text;
     } catch (e) {}
 }
@@ -281,6 +284,19 @@ window.showAdBanner = async function () {
     if (!window.CapAdMob) {
         console.warn('[AdMob] showAdBanner: CapAdMob not available');
         return;
+    }
+    // ZAROORI: AdMob.initialize() async hai aur native SDK boot karta hai
+    // (network call bhi ho sakti hai) — agar yeh complete hone se PEHLE
+    // showBanner() call ho jaye to banner silently fail ho jata hai
+    // (na koi error, na koi banner). Yahan us initialize-promise ka wait
+    // karte hain pehle.
+    if (window.__admobInitPromise) {
+        try {
+            var initOk = await window.__admobInitPromise;
+            console.log('[AdMob] AdMob init wait completed, success:', initOk);
+        } catch (e) {
+            console.warn('[AdMob] AdMob init wait failed:', e);
+        }
     }
     var topMargin = await getBannerTopMargin();
     try {
@@ -301,8 +317,10 @@ window.showAdBanner = async function () {
             _bannerLoadedOnce = true;
         }
         console.log('[AdMob] Banner show/resume completed');
+        _showDebugBadge('Banner: SHOWN ✓ margin:' + topMargin);
     } catch (e) {
         console.warn('[AdMob] Banner show/resume failed:', e);
+        _showDebugBadge('Banner FAILED: ' + (e && e.message ? e.message : JSON.stringify(e)));
         // Agar resumeBanner fail ho jaye (shayad pehli baar hi load nahi hui thi),
         // fallback ke taur pe showBanner try karo
         if (_bannerLoadedOnce) {
@@ -315,8 +333,10 @@ window.showAdBanner = async function () {
                     margin: topMargin,
                     isTesting: true
                 });
+                _showDebugBadge('Banner: SHOWN (fallback) ✓ margin:' + topMargin);
             } catch (e2) {
                 console.warn('[AdMob] Fallback showBanner also failed:', e2);
+                _showDebugBadge('Banner FALLBACK FAILED: ' + (e2 && e2.message ? e2.message : JSON.stringify(e2)));
             }
         }
     }
