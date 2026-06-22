@@ -189,27 +189,31 @@ window.showRewardedAd = async function () {
 var _bannerLoadedOnce = false; // pehli baar showBanner() se load ho chuki hai?
 
 // Banner ko status bar ke bilkul NEECHE dikhana hai.
-// CapStatusBar.getInfo() se exact native status bar height milti hai —
-// kyunki AdMob banner native layer pe render hoti hai, CSS/WebView coordinates
-// kaam nahi karte. Yeh async hai isliye await karo.
-async function getBannerTopMargin() {
+//
+// SAHI TARIKA: gamebar-wrap ki computed paddingTop = exact status bar height.
+// Boot.js mein applySafeArea()/applyStatusBarPadding() yahi value set karta hai.
+// @capacitor/status-bar v6 ke getInfo() mein statusBarHeight field NAHI hoti,
+// isliye woh approach kaam nahi karti.
+//
+// AdMob banner native layer pe render hoti hai lekin margin CSS pixels mein
+// accept karta hai — aur getComputedStyle().paddingTop bhi CSS pixels mein
+// hota hai — toh yeh match karta hai.
+function getBannerTopMargin() {
     var sbHeight = 0;
     try {
-        if (window.CapStatusBar && typeof window.CapStatusBar.getInfo === 'function') {
-            var info = await window.CapStatusBar.getInfo();
-            sbHeight = Math.round(info && info.statusBarHeight ? info.statusBarHeight : 0);
-            console.log('[AdMob] CapStatusBar.getInfo() statusBarHeight:', sbHeight);
-        } else {
-            // Fallback: CSS env variable se estimate
-            var tmp = document.createElement('div');
-            tmp.style.cssText = 'position:fixed;top:env(safe-area-inset-top,0px);left:0;width:1px;height:1px;pointer-events:none';
-            document.body.appendChild(tmp);
-            sbHeight = Math.round(tmp.getBoundingClientRect().top) || 0;
-            document.body.removeChild(tmp);
-            console.log('[AdMob] Fallback safe-area sbHeight:', sbHeight);
+        var gb = document.getElementById('gamebar-wrap');
+        if (gb) {
+            var pt = window.getComputedStyle(gb).paddingTop;
+            sbHeight = Math.round(parseFloat(pt) || 0);
+            console.log('[AdMob] gamebar paddingTop (status bar height):', sbHeight, 'raw:', pt);
+        }
+        // Safety: agar 0 aaya (layout settle nahi hua) to reasonable default
+        if (!sbHeight) {
+            sbHeight = 24; // minimum Android status bar
+            console.log('[AdMob] paddingTop was 0, using default:', sbHeight);
         }
     } catch(e) {
-        sbHeight = 0;
+        sbHeight = 24;
         console.warn('[AdMob] getBannerTopMargin error:', e);
     }
     _showDebugBadge('sbH:' + sbHeight + ' App:' + !!window.CapApp + ' AdMob:' + !!window.CapAdMob);
@@ -260,6 +264,7 @@ window.showAdBanner = async function () {
             console.warn('[AdMob] AdMob init wait failed:', e);
         }
     }
+    var topMargin = getBannerTopMargin();
     try {
         if (_bannerLoadedOnce && typeof window.CapAdMob.resumeBanner === 'function') {
             // Banner pehle se load ho chuki hai — sirf resume karo (fast)
@@ -267,7 +272,6 @@ window.showAdBanner = async function () {
             await window.CapAdMob.resumeBanner();
         } else {
             // Pehli baar — naya banner load karo
-            var topMargin = await getBannerTopMargin();
             console.log('[AdMob] Loading banner for the first time, unit:', AD_UNIT_BANNER, 'margin:', topMargin);
             await window.CapAdMob.showBanner({
                 adId: AD_UNIT_BANNER,
@@ -288,7 +292,7 @@ window.showAdBanner = async function () {
         if (_bannerLoadedOnce) {
             try {
                 console.log('[AdMob] Resume failed, falling back to fresh showBanner');
-                var topMargin = await getBannerTopMargin();
+                topMargin = getBannerTopMargin();
                 await window.CapAdMob.showBanner({
                     adId: AD_UNIT_BANNER,
                     adSize: 'BANNER',
