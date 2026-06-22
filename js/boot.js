@@ -208,7 +208,10 @@ var _bannerLoadedOnce = false; // pehli baar showBanner() se load ho chuki hai?
 // device/version ke hisaab se margin ko expected se zyada/kam apply
 // karte hain. Yeh EK number screenshot ke result ke mutabiq tune kiya
 // ja sakta hai — manfi value margin ko kam karegi.
-var MARGIN_CORRECTION = 0;
+// Tuning history: margin:134 (status-bar double-counted) → margin:97
+// (gamebar.height use kiya, par DISCOUNT%/AFTER% card headers abhi bhi
+// thode cut ho rahe the) → -18 correction se banner thodi upar aati hai.
+var MARGIN_CORRECTION = -18;
 
 async function getBannerTopMargin() {
     var gb = document.getElementById('gamebar-wrap');
