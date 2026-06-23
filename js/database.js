@@ -109,8 +109,7 @@ function ldPct(pct) {
 function hideLoading() {
     const el = document.getElementById('loading');
     if (!el) return;
-    el.classList.add('fade');
-    setTimeout(() => { el.style.display = 'none'; }, 400);
+    el.style.display = 'none';
 }
 function fmtSize(bytes) {
     if (!bytes) return '?';
