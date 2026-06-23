@@ -248,27 +248,7 @@ function getBannerTopMargin() {
 // kisi URL param ki zaroorat nahi. Har update pe apna hide-timer reset
 // karta hai (25 second), taake banner load hone mein extra time lage
 // to bhi aakhri/sabse zaroori message (banner shown/failed) miss na ho.
-function _showDebugBadge(text) {
-    try {
-        var badge = document.getElementById('_dmDebugBadge');
-        if (!badge) {
-            badge = document.createElement('div');
-            badge.id = '_dmDebugBadge';
-            badge.style.cssText = 'position:fixed;left:4px;bottom:4px;z-index:999999;' +
-                'background:rgba(0,0,0,0.85);color:#0f0;font-size:10px;font-family:monospace;' +
-                'padding:4px 6px;border-radius:6px;max-width:96vw;word-break:break-all;pointer-events:none';
-            document.body.appendChild(badge);
-        }
-        // Har update pe purana hide-timer cancel karke naya 25-second
-        // timer lagate hain — taake aakhri message ko poora dikhne ka
-        // waqt mile
-        if (badge._hideTimer) clearTimeout(badge._hideTimer);
-        badge._hideTimer = setTimeout(function() {
-            if (badge && badge.parentNode) badge.parentNode.removeChild(badge);
-        }, 25000);
-        badge.textContent = text;
-    } catch (e) {}
-}
+function _showDebugBadge(text) { /* debug disabled */ }
 
 window.showAdBanner = async function () {
     if (!window.CapAdMob) {
