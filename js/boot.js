@@ -8,17 +8,36 @@
    include karti hai.
 ═══════════════════════════════════════ */
 (function() {
+    // Banner height: AdMob BANNER size = 320x50dp standard
+    // Lekin screenshot mein 468x60 aa raha hai — AdMob smart banner hai
+    // jo 60px height use karta hai. Safe value: 60px.
+    var BANNER_HEIGHT_PX = 60;
+    var _bannerPaddingApplied = false;
+
     function applyStatusBarPadding(px) {
         var gb = document.getElementById('gamebar-wrap');
         if (!gb) return;
         px = Math.max(0, Math.min(px, 120)); // notch wale phones mein zyada ho sakta hai
-        gb.style.paddingTop = px + 'px';
-        // min-height (height ke bajaye) — taake 3-line center block
-        // (Lvl X / Pro Scanner / username) agar 58px se zyada jagah le
-        // to box khud expand ho jaye, overflow na ho
-        gb.style.minHeight = (58 + px) + 'px';
+        // Agar banner already show ho chuki hai to uski height bhi add karo
+        var extraPad = _bannerPaddingApplied ? BANNER_HEIGHT_PX : 0;
+        gb.style.paddingTop = (px + extraPad) + 'px';
+        gb.style.minHeight = (58 + px + extraPad) + 'px';
         gb.style.height = 'auto';
+        // Current statusbar px store karo — baad mein banner ke waqt kaam aayega
+        gb.dataset.statusBarPx = px;
     }
+
+    window._applyBannerPaddingToGamebar = function(bannerH) {
+        var gb = document.getElementById('gamebar-wrap');
+        if (!gb) return;
+        bannerH = bannerH || BANNER_HEIGHT_PX;
+        BANNER_HEIGHT_PX = bannerH;
+        _bannerPaddingApplied = true;
+        var currentPad = parseFloat(window.getComputedStyle(gb).paddingTop) || 0;
+        gb.style.paddingTop = (currentPad + bannerH) + 'px';
+        gb.style.minHeight = (parseFloat(gb.style.minHeight) || 58) + bannerH + 'px';
+        console.log('[Banner] Gamebar pushed down by', bannerH, 'px. New paddingTop:', gb.style.paddingTop);
+    };
 
     function applySafeArea() {
         var gb = document.getElementById('gamebar-wrap');
@@ -283,6 +302,10 @@ window.showAdBanner = async function () {
             _bannerLoadedOnce = true;
         }
         console.log('[AdMob] Banner show/resume completed');
+        // Gamebar ko banner ke neeche push karo
+        if (typeof window._applyBannerPaddingToGamebar === 'function') {
+            window._applyBannerPaddingToGamebar(60);
+        }
         _showDebugBadge('Banner: SHOWN ✓ TOP margin:' + topMargin);
     } catch (e) {
         console.warn('[AdMob] Banner show/resume failed:', e);
