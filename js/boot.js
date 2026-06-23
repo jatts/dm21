@@ -28,6 +28,11 @@
     }
 
     window._applyBannerPaddingToGamebar = function(bannerH) {
+        // Sirf PEHLI baar apply karo — har showAdBanner call pe dobara nahi
+        if (_bannerPaddingApplied) {
+            console.log('[Banner] Padding already applied, skipping');
+            return;
+        }
         var gb = document.getElementById('gamebar-wrap');
         if (!gb) return;
         bannerH = bannerH || BANNER_HEIGHT_PX;
