@@ -560,33 +560,32 @@ setTimeout(function() {
     var ONESIGNAL_APP_ID = 'f9e441e6-0852-4f55-82b4-066379edc977';
 
     function initOneSignal() {
-        // Check that the Cordova plugin is available
         if (!window.plugins || !window.plugins.OneSignal) {
             console.warn('[OneSignal] Cordova plugin not ready');
             return;
         }
 
         try {
+            // Enable detailed logs for debugging
+            window.plugins.OneSignal.setLogLevel({ logLevel: 6, visualLevel: 0 });
+
+            // Init the plugin
             window.plugins.OneSignal
                 .startInit(ONESIGNAL_APP_ID)
                 .handleNotificationOpened(function(jsonData) {
-                    console.log('[OneSignal] Notification clicked:', jsonData);
-                    // Optional: handle deeplink
-                    if (jsonData && jsonData.notification && jsonData.notification.payload && jsonData.notification.payload.launchURL) {
-                        window.open(jsonData.notification.payload.launchURL, '_blank');
-                    }
+                    console.log('[OneSignal] Notification opened:', jsonData);
                 })
                 .inFocusDisplaying(window.plugins.OneSignal.OSInFocusDisplayOption.Notification)
                 .endInit();
 
-            console.log('[OneSignal] Initialized ✓ (Cordova)');
+            console.log('[OneSignal] Initialized (Cordova)');
 
-            // Request permission (Android automatically prompts; iOS needs explicit call)
+            // Request notification permission
             window.plugins.OneSignal.promptForPushNotificationsWithUserResponse(function(accepted) {
-                console.log('[OneSignal] Permission:', accepted ? '✓ granted' : '✗ denied');
+                console.log('[OneSignal] Permission:', accepted ? 'granted' : 'denied');
             });
 
-            // Tag user after login
+            // Tag user (adjust as needed)
             function tryTagUser() {
                 var userName = '';
                 try {
@@ -601,12 +600,10 @@ setTimeout(function() {
                 if (userName) {
                     window.plugins.OneSignal.sendTag('employee_name', userName);
                     window.plugins.OneSignal.sendTag('app_version', '2.1');
-                    console.log('[OneSignal] Tagged:', userName);
                 } else {
                     setTimeout(tryTagUser, 3000);
                 }
             }
-
             setTimeout(tryTagUser, 2000);
 
         } catch(e) {
@@ -614,11 +611,10 @@ setTimeout(function() {
         }
     }
 
-    // Wait for Cordova deviceready
-    if (window.cordova && window.cordova.platformId) {
+    // Wait for deviceready
+    if (window.cordova) {
         document.addEventListener('deviceready', initOneSignal, false);
     } else {
-        // Fallback (Capacitor sometimes fires deviceready late)
         setTimeout(initOneSignal, 1000);
     }
 })();
