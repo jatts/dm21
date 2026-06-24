@@ -560,38 +560,33 @@ setTimeout(function() {
     var ONESIGNAL_APP_ID = 'f9e441e6-0852-4f55-82b4-066379edc977';
 
     function initOneSignal() {
-        // @onesignal/capacitor-plugin v5 — Capacitor.Plugins.OneSignal
-        var OS = window.Capacitor &&
-                 window.Capacitor.Plugins &&
-                 window.Capacitor.Plugins.OneSignal;
-
-        if (!OS) {
-            console.warn('[OneSignal] Plugin nahi mila');
+        // Check that the Cordova plugin is available
+        if (!window.plugins || !window.plugins.OneSignal) {
+            console.warn('[OneSignal] Cordova plugin not ready');
             return;
         }
 
         try {
-            // v5 syntax — initialize
-            OS.initialize(ONESIGNAL_APP_ID);
-
-            // Permission request
-            OS.Notifications.requestPermission(true)
-                .then(function(accepted) {
-                    console.log('[OneSignal] Permission:', accepted ? '✓ granted' : '✗ denied');
+            window.plugins.OneSignal
+                .startInit(ONESIGNAL_APP_ID)
+                .handleNotificationOpened(function(jsonData) {
+                    console.log('[OneSignal] Notification clicked:', jsonData);
+                    // Optional: handle deeplink
+                    if (jsonData && jsonData.notification && jsonData.notification.payload && jsonData.notification.payload.launchURL) {
+                        window.open(jsonData.notification.payload.launchURL, '_blank');
+                    }
                 })
-                .catch(function(e) {
-                    console.warn('[OneSignal] Permission error:', e);
-                });
+                .inFocusDisplaying(window.plugins.OneSignal.OSInFocusDisplayOption.Notification)
+                .endInit();
 
-            // Notification click handler
-            OS.Notifications.addEventListener('click', function(e) {
-                console.log('[OneSignal] Notification clicked:', e);
-                if (e && e.notification && e.notification.launchURL) {
-                    window.open(e.notification.launchURL, '_blank');
-                }
+            console.log('[OneSignal] Initialized ✓ (Cordova)');
+
+            // Request permission (Android automatically prompts; iOS needs explicit call)
+            window.plugins.OneSignal.promptForPushNotificationsWithUserResponse(function(accepted) {
+                console.log('[OneSignal] Permission:', accepted ? '✓ granted' : '✗ denied');
             });
 
-            // Employee tag — admin specific employee ko target kar sake
+            // Tag user after login
             function tryTagUser() {
                 var userName = '';
                 try {
@@ -604,8 +599,8 @@ setTimeout(function() {
                 } catch(e) {}
 
                 if (userName) {
-                    OS.User.addTag('employee_name', userName);
-                    OS.User.addTag('app_version', '2.1');
+                    window.plugins.OneSignal.sendTag('employee_name', userName);
+                    window.plugins.OneSignal.sendTag('app_version', '2.1');
                     console.log('[OneSignal] Tagged:', userName);
                 } else {
                     setTimeout(tryTagUser, 3000);
@@ -613,17 +608,17 @@ setTimeout(function() {
             }
 
             setTimeout(tryTagUser, 2000);
-            console.log('[OneSignal] Initialized ✓ v5');
 
         } catch(e) {
             console.warn('[OneSignal] Init error:', e);
         }
     }
 
-    if (window.__capacitorReady) {
-        initOneSignal();
+    // Wait for Cordova deviceready
+    if (window.cordova && window.cordova.platformId) {
+        document.addEventListener('deviceready', initOneSignal, false);
     } else {
-        window.addEventListener('capacitorPluginsReady', initOneSignal);
-        setTimeout(initOneSignal, 3000);
+        // Fallback (Capacitor sometimes fires deviceready late)
+        setTimeout(initOneSignal, 1000);
     }
 })();
