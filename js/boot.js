@@ -553,54 +553,69 @@ setTimeout(function() {
 
 /* ═══════════════════════════════════════
    ONESIGNAL PUSH NOTIFICATIONS
-   App open hone par permission maango
-   aur user ka employee tag set karo
+   Documentation: @onesignal/capacitor-plugin
 ═══════════════════════════════════════ */
 (function() {
     var ONESIGNAL_APP_ID = 'f9e441e6-0852-4f55-82b4-066379edc977';
 
     function initOneSignal() {
-        // OneSignal Capacitor plugin check
-        var OS = window.plugins && window.plugins.OneSignal ? window.plugins.OneSignal : (window.OneSignal || null);
+        // @onesignal/capacitor-plugin — Capacitor Plugins namespace mein milta hai
+        var OS = window.Capacitor &&
+                 window.Capacitor.Plugins &&
+                 window.Capacitor.Plugins.OneSignal;
+
         if (!OS) {
-            console.warn('[OneSignal] Plugin nahi mila — native build mein plugin add karo');
+            console.warn('[OneSignal] Plugin nahi mila — check: @onesignal/capacitor-plugin installed & synced?');
             return;
         }
 
         try {
-            // Initialize — cordova plugin syntax
-            OS.startInit(ONESIGNAL_APP_ID)
-              .inFocusDisplaying(OS.OSInFocusDisplayOption.Notification)
-              .endInit();
+            // Step 1: Initialize — App ID se
+            OS.initialize(ONESIGNAL_APP_ID);
 
-            // Permission request
-            OS.promptForPushNotificationsWithUserResponse(function(accepted) {
-                console.log('[OneSignal] Notification permission:', accepted ? 'granted' : 'denied');
-            });
+            // Step 2: Debug logging (production mein hata dena)
+            if (OS.Debug) {
+                OS.Debug.setLogLevel(2); // 0=none, 6=verbose
+            }
 
-            // User ka employee name tag karo (leaderboard/auth se)
-            // Taake admin specific employee ko notification bhej sake
-            var tryTagUser = function() {
+            // Step 3: Notification permission request
+            OS.Notifications.requestPermission(true)
+                .then(function(accepted) {
+                    console.log('[OneSignal] Permission:', accepted ? '✓ granted' : '✗ denied');
+                })
+                .catch(function(e) {
+                    console.warn('[OneSignal] Permission error:', e);
+                });
+
+            // Step 4: Employee name tag karo — admin specific employee ko bhej sake
+            function tryTagUser() {
                 var userName = '';
-                // Auth se username lo
                 try {
+                    // Auth se username lo — apna localStorage key yahan adjust karo
                     var auth = JSON.parse(localStorage.getItem('dm_auth') || '{}');
                     userName = auth.name || auth.username || auth.user || '';
+
+                    // Agar auth alag key mein hai
+                    if (!userName) {
+                        userName = localStorage.getItem('dm_username') ||
+                                   localStorage.getItem('userName') || '';
+                    }
                 } catch(e) {}
 
                 if (userName) {
-                    OS.sendTag('employee_name', userName);
-                    OS.sendTag('app_version', '2.1');
-                    console.log('[OneSignal] User tagged:', userName);
+                    OS.User.addTag('employee_name', userName);
+                    OS.User.addTag('app_version', '2.1');
+                    console.log('[OneSignal] Tagged user:', userName);
                 } else {
-                    // 3 sec baad retry — auth settle hone do
+                    // 3 sec baad retry
                     setTimeout(tryTagUser, 3000);
                 }
-            };
+            }
 
-            setTimeout(tryTagUser, 1500);
+            setTimeout(tryTagUser, 2000);
 
             console.log('[OneSignal] Initialized ✓');
+
         } catch(e) {
             console.warn('[OneSignal] Init error:', e);
         }
@@ -611,7 +626,6 @@ setTimeout(function() {
         initOneSignal();
     } else {
         window.addEventListener('capacitorPluginsReady', initOneSignal);
-        // Fallback — 3 sec baad try karo
-        setTimeout(initOneSignal, 3000);
+        setTimeout(initOneSignal, 3000); // fallback
     }
 })();
