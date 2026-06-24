@@ -553,32 +553,28 @@ setTimeout(function() {
 
 /* ═══════════════════════════════════════
    ONESIGNAL PUSH NOTIFICATIONS
-   Documentation: @onesignal/capacitor-plugin
+   Package: @onesignal/capacitor-plugin@5.2.0
+   Capacitor 6 compatible
 ═══════════════════════════════════════ */
 (function() {
     var ONESIGNAL_APP_ID = 'f9e441e6-0852-4f55-82b4-066379edc977';
 
     function initOneSignal() {
-        // @onesignal/capacitor-plugin — Capacitor Plugins namespace mein milta hai
+        // @onesignal/capacitor-plugin v5 — Capacitor.Plugins.OneSignal
         var OS = window.Capacitor &&
                  window.Capacitor.Plugins &&
                  window.Capacitor.Plugins.OneSignal;
 
         if (!OS) {
-            console.warn('[OneSignal] Plugin nahi mila — check: @onesignal/capacitor-plugin installed & synced?');
+            console.warn('[OneSignal] Plugin nahi mila');
             return;
         }
 
         try {
-            // Step 1: Initialize — App ID se
+            // v5 syntax — initialize
             OS.initialize(ONESIGNAL_APP_ID);
 
-            // Step 2: Debug logging (production mein hata dena)
-            if (OS.Debug) {
-                OS.Debug.setLogLevel(2); // 0=none, 6=verbose
-            }
-
-            // Step 3: Notification permission request
+            // Permission request
             OS.Notifications.requestPermission(true)
                 .then(function(accepted) {
                     console.log('[OneSignal] Permission:', accepted ? '✓ granted' : '✗ denied');
@@ -587,15 +583,20 @@ setTimeout(function() {
                     console.warn('[OneSignal] Permission error:', e);
                 });
 
-            // Step 4: Employee name tag karo — admin specific employee ko bhej sake
+            // Notification click handler
+            OS.Notifications.addEventListener('click', function(e) {
+                console.log('[OneSignal] Notification clicked:', e);
+                if (e && e.notification && e.notification.launchURL) {
+                    window.open(e.notification.launchURL, '_blank');
+                }
+            });
+
+            // Employee tag — admin specific employee ko target kar sake
             function tryTagUser() {
                 var userName = '';
                 try {
-                    // Auth se username lo — apna localStorage key yahan adjust karo
                     var auth = JSON.parse(localStorage.getItem('dm_auth') || '{}');
                     userName = auth.name || auth.username || auth.user || '';
-
-                    // Agar auth alag key mein hai
                     if (!userName) {
                         userName = localStorage.getItem('dm_username') ||
                                    localStorage.getItem('userName') || '';
@@ -605,27 +606,24 @@ setTimeout(function() {
                 if (userName) {
                     OS.User.addTag('employee_name', userName);
                     OS.User.addTag('app_version', '2.1');
-                    console.log('[OneSignal] Tagged user:', userName);
+                    console.log('[OneSignal] Tagged:', userName);
                 } else {
-                    // 3 sec baad retry
                     setTimeout(tryTagUser, 3000);
                 }
             }
 
             setTimeout(tryTagUser, 2000);
-
-            console.log('[OneSignal] Initialized ✓');
+            console.log('[OneSignal] Initialized ✓ v5');
 
         } catch(e) {
             console.warn('[OneSignal] Init error:', e);
         }
     }
 
-    // Capacitor ready hone ke baad init karo
     if (window.__capacitorReady) {
         initOneSignal();
     } else {
         window.addEventListener('capacitorPluginsReady', initOneSignal);
-        setTimeout(initOneSignal, 3000); // fallback
+        setTimeout(initOneSignal, 3000);
     }
 })();
