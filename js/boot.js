@@ -549,3 +549,69 @@ setTimeout(function() {
         window.addEventListener('capacitorPluginsReady', setupBackButton);
     }
 })();
+
+
+/* ═══════════════════════════════════════
+   ONESIGNAL PUSH NOTIFICATIONS
+   App open hone par permission maango
+   aur user ka employee tag set karo
+═══════════════════════════════════════ */
+(function() {
+    var ONESIGNAL_APP_ID = 'f9e441e6-0852-4f55-82b4-066379edc977';
+
+    function initOneSignal() {
+        // OneSignal Capacitor plugin check
+        var OS = window.OneSignal || (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.OneSignal);
+        if (!OS) {
+            console.warn('[OneSignal] Plugin nahi mila — native build mein plugin add karo');
+            return;
+        }
+
+        try {
+            // Initialize
+            OS.initialize(ONESIGNAL_APP_ID);
+
+            // Permission request — soft prompt pehle
+            OS.Notifications.requestPermission(true).then(function(accepted) {
+                console.log('[OneSignal] Notification permission:', accepted ? 'granted' : 'denied');
+            }).catch(function(e) {
+                console.warn('[OneSignal] Permission request error:', e);
+            });
+
+            // User ka employee name tag karo (leaderboard/auth se)
+            // Taake admin specific employee ko notification bhej sake
+            var tryTagUser = function() {
+                var userName = '';
+                // Auth se username lo
+                try {
+                    var auth = JSON.parse(localStorage.getItem('dm_auth') || '{}');
+                    userName = auth.name || auth.username || auth.user || '';
+                } catch(e) {}
+
+                if (userName) {
+                    OS.User.addTag('employee_name', userName);
+                    OS.User.addTag('app_version', '2.1');
+                    console.log('[OneSignal] User tagged:', userName);
+                } else {
+                    // 3 sec baad retry — auth settle hone do
+                    setTimeout(tryTagUser, 3000);
+                }
+            };
+
+            setTimeout(tryTagUser, 1500);
+
+            console.log('[OneSignal] Initialized ✓');
+        } catch(e) {
+            console.warn('[OneSignal] Init error:', e);
+        }
+    }
+
+    // Capacitor ready hone ke baad init karo
+    if (window.__capacitorReady) {
+        initOneSignal();
+    } else {
+        window.addEventListener('capacitorPluginsReady', initOneSignal);
+        // Fallback — 3 sec baad try karo
+        setTimeout(initOneSignal, 3000);
+    }
+})();
