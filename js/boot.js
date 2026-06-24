@@ -560,46 +560,33 @@ setTimeout(function() {
     var ONESIGNAL_APP_ID = 'f9e441e6-0852-4f55-82b4-066379edc977';
 
     function initOneSignal() {
-        if (!window.plugins || !window.plugins.OneSignal) {
-            console.warn('[OneSignal] Cordova plugin not ready');
+        // v5 mein window.plugins.OneSignal ki jagah window.OneSignal use hota hai
+        if (!window.OneSignal) {
+            console.warn('[OneSignal] Plugin not loaded');
             return;
         }
 
         try {
-            // Enable detailed logs for debugging
-            window.plugins.OneSignal.setLogLevel({ logLevel: 6, visualLevel: 0 });
+            // 1. Debug level set karein
+            window.OneSignal.Debug.setLogLevel(6);
 
-            // Init the plugin
-            window.plugins.OneSignal
-                .startInit(ONESIGNAL_APP_ID)
-                .handleNotificationOpened(function(jsonData) {
-                    console.log('[OneSignal] Notification opened:', jsonData);
-                })
-                .inFocusDisplaying(window.plugins.OneSignal.OSInFocusDisplayOption.Notification)
-                .endInit();
+            // 2. Initialize (v5 mein startInit/endInit nahi hota)
+            window.OneSignal.initialize(ONESIGNAL_APP_ID);
+            console.log('[OneSignal] Initialized (v5)');
 
-            console.log('[OneSignal] Initialized (Cordova)');
-
-            // Request notification permission
-            window.plugins.OneSignal.promptForPushNotificationsWithUserResponse(function(accepted) {
+            // 3. Permission mangna
+            window.OneSignal.Notifications.requestPermission(true).then((accepted) => {
                 console.log('[OneSignal] Permission:', accepted ? 'granted' : 'denied');
             });
 
-            // Tag user (adjust as needed)
+            // 4. Tagging (v5 mein sendTag ki jagah addTag hota hai)
             function tryTagUser() {
-                var userName = '';
-                try {
-                    var auth = JSON.parse(localStorage.getItem('dm_auth') || '{}');
-                    userName = auth.name || auth.username || auth.user || '';
-                    if (!userName) {
-                        userName = localStorage.getItem('dm_username') ||
-                                   localStorage.getItem('userName') || '';
-                    }
-                } catch(e) {}
-
+                var userName = localStorage.getItem('dm_username') || '';
+                
                 if (userName) {
-                    window.plugins.OneSignal.sendTag('employee_name', userName);
-                    window.plugins.OneSignal.sendTag('app_version', '2.1');
+                    window.OneSignal.User.addTag('employee_name', userName);
+                    window.OneSignal.User.addTag('app_version', '2.1');
+                    console.log('[OneSignal] Tags sent:', userName);
                 } else {
                     setTimeout(tryTagUser, 3000);
                 }
@@ -607,14 +594,13 @@ setTimeout(function() {
             setTimeout(tryTagUser, 2000);
 
         } catch(e) {
-            console.warn('[OneSignal] Init error:', e);
+            console.error('[OneSignal] Init error:', e);
         }
     }
 
-    // Wait for deviceready
     if (window.cordova) {
         document.addEventListener('deviceready', initOneSignal, false);
     } else {
-        setTimeout(initOneSignal, 1000);
+        initOneSignal();
     }
 })();
