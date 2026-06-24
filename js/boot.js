@@ -561,21 +561,21 @@ setTimeout(function() {
 
     function initOneSignal() {
         // OneSignal Capacitor plugin check
-        var OS = window.OneSignal || (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.OneSignal);
+        var OS = window.plugins && window.plugins.OneSignal ? window.plugins.OneSignal : (window.OneSignal || null);
         if (!OS) {
             console.warn('[OneSignal] Plugin nahi mila — native build mein plugin add karo');
             return;
         }
 
         try {
-            // Initialize
-            OS.initialize(ONESIGNAL_APP_ID);
+            // Initialize — cordova plugin syntax
+            OS.startInit(ONESIGNAL_APP_ID)
+              .inFocusDisplaying(OS.OSInFocusDisplayOption.Notification)
+              .endInit();
 
-            // Permission request — soft prompt pehle
-            OS.Notifications.requestPermission(true).then(function(accepted) {
+            // Permission request
+            OS.promptForPushNotificationsWithUserResponse(function(accepted) {
                 console.log('[OneSignal] Notification permission:', accepted ? 'granted' : 'denied');
-            }).catch(function(e) {
-                console.warn('[OneSignal] Permission request error:', e);
             });
 
             // User ka employee name tag karo (leaderboard/auth se)
@@ -589,8 +589,8 @@ setTimeout(function() {
                 } catch(e) {}
 
                 if (userName) {
-                    OS.User.addTag('employee_name', userName);
-                    OS.User.addTag('app_version', '2.1');
+                    OS.sendTag('employee_name', userName);
+                    OS.sendTag('app_version', '2.1');
                     console.log('[OneSignal] User tagged:', userName);
                 } else {
                     // 3 sec baad retry — auth settle hone do
