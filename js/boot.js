@@ -552,72 +552,54 @@ setTimeout(function() {
 
 
 /* ═══════════════════════════════════════
-   ONESIGNAL PUSH NOTIFICATIONS
-   Package: onesignal-cordova-plugin v5.4.0
-   Session key: dmSession → name field
+   ONESIGNAL WEB SDK
+   CDN loaded — no native plugin needed
 ═══════════════════════════════════════ */
 (function() {
     var ONESIGNAL_APP_ID = 'f9e441e6-0852-4f55-82b4-066379edc977';
 
     function initOneSignal() {
-        var OS = window.OneSignal;
+        window.OneSignal = window.OneSignal || [];
 
-        if (!OS) {
-            console.warn('[OneSignal] window.OneSignal nahi mila');
-            return;
-        }
-
-        try {
-            // onesignal-cordova-plugin v5 — setAppId syntax
-            OS.setAppId(ONESIGNAL_APP_ID);
-
-            // Permission request
-            OS.promptForPushNotificationsWithUserResponse(function(accepted) {
-                console.log('[OneSignal] Permission:', accepted ? '✓ granted' : '✗ denied');
+        window.OneSignal.push(function() {
+            window.OneSignal.init({
+                appId: ONESIGNAL_APP_ID,
+                allowLocalhostAsSecureOrigin: true,
+                notifyButton: { enable: false },
+                welcomeNotification: { disable: true }
             });
 
-            // Notification open handler
-            OS.setNotificationOpenedHandler(function(data) {
-                console.log('[OneSignal] Opened:', data);
-                if (data && data.notification && data.notification.launchURL) {
-                    window.open(data.notification.launchURL, '_blank');
+            window.OneSignal.push(['registerForPushNotifications']);
+
+            window.OneSignal.getUserId(function(userId) {
+                console.log('[OneSignal] UserID:', userId);
+            });
+
+            window.OneSignal.on('subscriptionChange', function(isSubscribed) {
+                console.log('[OneSignal] Subscribed:', isSubscribed);
+                if (isSubscribed) {
+                    try {
+                        var raw = localStorage.getItem('dmSession');
+                        if (raw) {
+                            var session = JSON.parse(raw);
+                            var userName = session.name || session.playerId || '';
+                            if (userName) {
+                                window.OneSignal.sendTag('employee_name', userName);
+                                window.OneSignal.sendTag('app_version', '2.1');
+                                console.log('[OneSignal] Tagged:', userName);
+                            }
+                        }
+                    } catch(e) {}
                 }
             });
 
-            // Employee tag — dmSession se name lo
-            function tryTagUser() {
-                var userName = '';
-                try {
-                    // Auth key: dmSession → name field
-                    var raw = localStorage.getItem('dmSession');
-                    if (raw) {
-                        var session = JSON.parse(raw);
-                        userName = session.name || session.playerId || '';
-                    }
-                } catch(e) {}
-
-                if (userName) {
-                    OS.sendTag('employee_name', userName);
-                    OS.sendTag('app_version', '2.1');
-                    console.log('[OneSignal] Tagged:', userName);
-                } else {
-                    // Retry — session load hone do
-                    setTimeout(tryTagUser, 3000);
-                }
-            }
-
-            setTimeout(tryTagUser, 2000);
-            console.log('[OneSignal] Initialized ✓ setAppId done');
-
-        } catch(e) {
-            console.warn('[OneSignal] Init error:', e);
-        }
+            console.log('[OneSignal] Web SDK initialized ✓');
+        });
     }
 
-    if (window.__capacitorReady) {
-        initOneSignal();
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initOneSignal);
     } else {
-        window.addEventListener('capacitorPluginsReady', initOneSignal);
-        setTimeout(initOneSignal, 3000);
+        initOneSignal();
     }
 })();
