@@ -552,97 +552,143 @@ setTimeout(function() {
 
 
 /* ═══════════════════════════════════════
-   ONESIGNAL — Conditional (Web SDK only)
-   Agar Capacitor native mode hai toh skip karein
+   ONESIGNAL — Hybrid (Native + Web)
+   - Native: use OneSignalNative (imported via module)
+   - Web: use window.OneSignal (Web SDK)
 ═══════════════════════════════════════ */
 (function() {
-  // Detect native Capacitor
-  var isNative = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
+    const isNative = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
 
-  if (isNative) {
-    console.log('[OneSignal] Native mode — Web SDK not used. Capacitor plugin handles notifications.');
-    return; // 🛑 Yahan se wapas chale jayein, kuch nahi karna
-  }
+    if (isNative) {
+        // ----- NATIVE MODE -----
+        console.log('[OneSignal] Native mode — using native plugin');
 
-  var ONESIGNAL_APP_ID = 'f9e441e6-0852-4f55-82b4-066379edc977';
+        // We need to wait for the native plugin to be loaded (via <script type="module">)
+        function initNativeOneSignal() {
+            const OS = window.OneSignalNative;
+            if (!OS) {
+                console.warn('[OneSignal] Native plugin not ready yet — retrying...');
+                setTimeout(initNativeOneSignal, 500);
+                return;
+            }
 
-  function initOneSignal() {
-    if (!window.OneSignal || Array.isArray(window.OneSignal)) {
-      console.warn('[OneSignal] SDK not ready yet');
-      setTimeout(initOneSignal, 1000);
-      return;
-    }
+            const APP_ID = 'f9e441e6-0852-4f55-82b4-066379edc977';
 
-    var OS = window.OneSignal;
+            (async function() {
+                try {
+                    await OS.initialize({ appId: APP_ID });
+                    console.log('✅ OneSignal initialized (native)');
 
-    try {
-      OS.init({ appId: ONESIGNAL_APP_ID });
+                    // Login with external ID (from session)
+                    const session = JSON.parse(localStorage.getItem('dmSession') || '{}');
+                    if (session.playerId) {
+                        await OS.login(session.playerId);
+                        console.log('✅ Logged in with ID:', session.playerId);
+                    } else {
+                        console.warn('⚠️ No playerId in session');
+                    }
 
-      OS.Notifications.requestPermission(true)
-        .then(function(accepted) {
-          console.log('[OneSignal] Permission:', accepted ? '✓' : '✗');
-          if (accepted) tagEmployee();
-        })
-        .catch(function(e) {
-          console.warn('[OneSignal] Permission error:', e);
-        });
+                    // Request permission
+                    const perm = await OS.Notifications.requestPermission(true);
+                    console.log('Permission granted?', perm);
 
-      if (OS.User && OS.User.PushSubscription) {
-        OS.User.PushSubscription.addEventListener('change', function(e) {
-          console.log('[OneSignal] Subscription changed:', e);
-          if (e.current && e.current.optedIn) tagEmployee();
-        });
-      }
+                    // Get player ID
+                    const sub = await OS.User.pushSubscription.getIdAsync();
+                    console.log('Player ID:', sub);
 
-      console.log('[OneSignal] Web SDK v16 initialized ✓ (browser mode)');
-    } catch(e) {
-      console.warn('[OneSignal] Init error:', e);
-    }
-  }
-
-  function tagEmployee() {
-    try {
-      var raw = localStorage.getItem('dmSession');
-      if (raw) {
-        var session = JSON.parse(raw);
-        var userName = session.name || session.playerId || '';
-        if (userName && window.OneSignal && window.OneSignal.User) {
-          window.OneSignal.User.addTag('employee_name', userName);
-          window.OneSignal.User.addTag('app_version', '2.1');
-          console.log('[OneSignal] Tagged:', userName);
+                    // Tag employee name
+                    if (session.name) {
+                        await OS.User.addTag('employee_name', session.name);
+                    }
+                } catch (e) {
+                    console.error('[OneSignal] Native init error:', e);
+                }
+            })();
         }
-      }
-    } catch(e) {
-      console.warn('[OneSignal] Tag error:', e);
-    }
-  }
 
-  // Web SDK load hone ka wait
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function() {
-      if (window.OneSignal && !Array.isArray(window.OneSignal)) {
-        initOneSignal();
-      } else {
-        setTimeout(function wait() {
-          if (window.OneSignal && !Array.isArray(window.OneSignal)) {
-            initOneSignal();
-          } else {
-            setTimeout(wait, 500);
-          }
-        }, 500);
-      }
-    });
-  } else {
-    if (window.OneSignal && !Array.isArray(window.OneSignal)) {
-      initOneSignal();
-    } else {
-      setTimeout(function wait() {
-        if (window.OneSignal && !Array.isArray(window.OneSignal)) {
-          initOneSignal();
+        // Listen for native plugin ready event (from index.html)
+        if (window.OneSignalNative) {
+            initNativeOneSignal();
         } else {
-          setTimeout(wait, 500);
+            window.addEventListener('onesignalNativeReady', initNativeOneSignal);
         }
-      }, 500);
+
+        return; // Skip Web SDK code below
     }
-  }
+
+    // ----- WEB MODE (Browser / GitHub Pages) -----
+    console.log('[OneSignal] Web mode — using Web SDK');
+    const ONESIGNAL_APP_ID = 'f9e441e6-0852-4f55-82b4-066379edc977';
+
+    function initOneSignal() {
+        if (!window.OneSignal || Array.isArray(window.OneSignal)) {
+            console.warn('[OneSignal] Web SDK not ready yet');
+            setTimeout(initOneSignal, 1000);
+            return;
+        }
+
+        const OS = window.OneSignal;
+        try {
+            OS.init({ appId: ONESIGNAL_APP_ID });
+            OS.Notifications.requestPermission(true)
+                .then(accepted => {
+                    console.log('[OneSignal] Permission:', accepted ? '✅' : '❌');
+                    if (accepted) tagEmployee();
+                })
+                .catch(e => console.warn('[OneSignal] Permission error:', e));
+
+            if (OS.User && OS.User.PushSubscription) {
+                OS.User.PushSubscription.addEventListener('change', e => {
+                    if (e.current && e.current.optedIn) tagEmployee();
+                });
+            }
+            console.log('[OneSignal] Web SDK initialized');
+        } catch(e) {
+            console.warn('[OneSignal] Web init error:', e);
+        }
+    }
+
+    function tagEmployee() {
+        try {
+            const raw = localStorage.getItem('dmSession');
+            if (raw) {
+                const session = JSON.parse(raw);
+                const userName = session.name || session.playerId || '';
+                if (userName && window.OneSignal && window.OneSignal.User) {
+                    window.OneSignal.User.addTag('employee_name', userName);
+                    window.OneSignal.User.addTag('app_version', '2.1');
+                }
+            }
+        } catch(e) {}
+    }
+
+    // Wait for Web SDK to load
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.OneSignal && !Array.isArray(window.OneSignal)) {
+                initOneSignal();
+            } else {
+                setTimeout(function wait() {
+                    if (window.OneSignal && !Array.isArray(window.OneSignal)) {
+                        initOneSignal();
+                    } else {
+                        setTimeout(wait, 500);
+                    }
+                }, 500);
+            }
+        });
+    } else {
+        // Not loading, check if already loaded
+        if (window.OneSignal && !Array.isArray(window.OneSignal)) {
+            initOneSignal();
+        } else {
+            setTimeout(function wait() {
+                if (window.OneSignal && !Array.isArray(window.OneSignal)) {
+                    initOneSignal();
+                } else {
+                    setTimeout(wait, 500);
+                }
+            }, 500);
+        }
+    }
 })();
