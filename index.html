@@ -160,6 +160,8 @@
             tryInitPlugins();
         })();
     </script>
+  <!-- OneSignal Web SDK -->
+  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 </head>
 <body>
 
@@ -1056,20 +1058,20 @@ function osDebugRefresh() {
     osDebugLog('Capacitor: ' + (hasCapacitor ? '✅ Present' : '❌ Missing'),
         hasCapacitor ? '#4ade80' : '#f87171');
 
-    // 2. OneSignal plugin check
-    var OS = window.OneSignal ||
-             (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.OneSignal);
-    osDebugLog('OneSignal plugin: ' + (OS ? '✅ Found' : '❌ NOT FOUND'),
+    // 2. OneSignal Web SDK check
+    var OS = window.OneSignal;
+    var isArray = Array.isArray(OS);
+    var isObj = OS && typeof OS === 'object' && !isArray;
+    osDebugLog('window.OneSignal: ' + (OS ? '✅ Found' : '❌ NOT FOUND') + (isArray ? ' (array/loading)' : isObj ? ' (initialized)' : ''),
         OS ? '#4ade80' : '#f87171');
 
-    // 3. window.OneSignal specifically
-    osDebugLog('window.OneSignal: ' + (window.OneSignal ? '✅' : '❌'),
-        window.OneSignal ? '#4ade80' : '#f87171');
+    osDebugLog('OneSignal type: ' + (OS ? (isArray ? 'Array (SDK loading...)' : 'Object (SDK ready ✅)') : 'undefined'),
+        isObj ? '#4ade80' : '#fbbf24');
 
-    // 4. Capacitor.Plugins.OneSignal
+    // Capacitor.Plugins.OneSignal (native — not used anymore)
     var capOS = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.OneSignal;
-    osDebugLog('Capacitor.Plugins.OneSignal: ' + (capOS ? '✅' : '❌'),
-        capOS ? '#4ade80' : '#f87171');
+    osDebugLog('Capacitor.Plugins.OneSignal: ' + (capOS ? '✅' : '❌ (expected — Web SDK use ho raha hai)'),
+        '#475569');
 
     // 5. Platform check
     var platform = window.Capacitor ? window.Capacitor.getPlatform() : 'web';
@@ -1154,59 +1156,43 @@ function osDebugRefresh() {
         osDebugLog('Auth read error: ' + e.message, '#f87171');
     }
 
-    // 10. Deep OneSignal check
-    osDebugLog('--- Init Check ---', '#a78bfa');
+    // 10. Web SDK status check
+    osDebugLog('--- Web SDK Status ---', '#a78bfa');
     
-    // Available methods check
-    var methods = [];
-    if (OS) {
-        ['setAppId','initialize','getAppId','promptForPushNotificationsWithUserResponse',
-         'Notifications','User','PushSubscription'].forEach(function(m) {
-            if (OS[m]) methods.push(m);
-        });
-        osDebugLog('Methods: ' + (methods.length ? methods.join(', ') : 'NONE'), '#a78bfa');
-    }
+    if (OS && !Array.isArray(OS)) {
+        // SDK fully loaded
+        try {
+            OS.getUserId(function(uid) {
+                osDebugLog('UserID: ' + (uid ? '✅ ' + uid.substring(0,12)+'...' : '❌ null'), 
+                    uid ? '#4ade80' : '#f87171');
+            });
+        } catch(e) {
+            osDebugLog('getUserId error: ' + e.message, '#f87171');
+        }
 
-    // Direct setAppId try karo
-    if (OS && OS.setAppId) {
         try {
-            OS.setAppId('f9e441e6-0852-4f55-82b4-066379edc977');
-            osDebugLog('setAppId(): ✅ called', '#4ade80');
+            OS.isPushNotificationsEnabled(function(enabled) {
+                osDebugLog('Push enabled: ' + (enabled ? '✅ YES' : '❌ NO'),
+                    enabled ? '#4ade80' : '#f87171');
+            });
         } catch(e) {
-            osDebugLog('setAppId() error: ' + e.message, '#f87171');
+            osDebugLog('isPushEnabled error: ' + e.message, '#f87171');
         }
-    } else if (OS && OS.initialize) {
+
         try {
-            OS.initialize('f9e441e6-0852-4f55-82b4-066379edc977');
-            osDebugLog('initialize(): ✅ called', '#4ade80');
-        } catch(e) {
-            osDebugLog('initialize() error: ' + e.message, '#f87171');
-        }
+            OS.getNotificationPermission().then(function(perm) {
+                osDebugLog('Permission: ' + perm, perm === 'granted' ? '#4ade80' : '#f87171');
+            }).catch(function(){});
+        } catch(e) {}
+
+    } else if (Array.isArray(OS)) {
+        osDebugLog('SDK CDN load ho rahi hai... wait karo', '#fbbf24');
+        osDebugLog('Ya HTTPS zaroori hai Web SDK ke liye', '#fbbf24');
+        osDebugLog('GitHub Pages URL: https://jatts.github.io/dm21/', '#a78bfa');
     } else {
-        osDebugLog('❌ No init method found!', '#f87171');
+        osDebugLog('❌ OneSignal SDK nahi mila', '#f87171');
+        osDebugLog('CDN block ho rahi hai?', '#f87171');
     }
-
-    // Push subscription status
-    setTimeout(function() {
-        try {
-            if (OS && OS.User && OS.User.PushSubscription) {
-                var ps = OS.User.PushSubscription;
-                osDebugLog('Push optedIn: ' + (ps.optedIn ? '✅' : '❌'), ps.optedIn ? '#4ade80' : '#f87171');
-                osDebugLog('Push token: ' + (ps.token ? ps.token.substring(0,15)+'...' : '❌ null'), ps.token ? '#4ade80' : '#f87171');
-            }
-            if (OS && OS.getDeviceState) {
-                OS.getDeviceState().then(function(state) {
-                    osDebugLog('deviceState userId: ' + (state.userId || 'null'), state.userId ? '#4ade80' : '#f87171');
-                    osDebugLog('deviceState pushToken: ' + (state.pushToken ? state.pushToken.substring(0,15)+'...' : 'null'), state.pushToken ? '#4ade80' : '#f87171');
-                    osDebugLog('deviceState subscribed: ' + (state.isSubscribed ? '✅' : '❌'), state.isSubscribed ? '#4ade80' : '#f87171');
-                }).catch(function(e) {
-                    osDebugLog('getDeviceState error: ' + e.message, '#f87171');
-                });
-            }
-        } catch(e) {
-            osDebugLog('Subscription check error: ' + e.message, '#f87171');
-        }
-    }, 500);
 }
 
 function osDebugRequestPermission() {
