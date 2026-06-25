@@ -364,7 +364,7 @@ if (_apCard) {
             // matlab scanHistory[0] hi woh entry hai jo is card se match karti hai.
             // (lastLookupBarcode use nahi karte kyunki woh sirf barcode string
             // hai, index nahi — agar same barcode kisi wajah se 2 baar history
-            // mein ho to confusion ho sakta hai)
+            // mein ho to confusion ho sakti hai)
             if (typeof scanHistory !== 'undefined' && scanHistory.length > 0 && scanHistory[0].discDisplay === 'N/A') {
                 openPriceCalc(calcPct, calcArticle, scanHistory[0].Barcode, 0);
             } else {
@@ -552,81 +552,97 @@ setTimeout(function() {
 
 
 /* ═══════════════════════════════════════
-   ONESIGNAL WEB SDK v16
-   CDN: cdn.onesignal.com/sdks/web/v16
+   ONESIGNAL — Conditional (Web SDK only)
+   Agar Capacitor native mode hai toh skip karein
 ═══════════════════════════════════════ */
 (function() {
-    var ONESIGNAL_APP_ID = 'f9e441e6-0852-4f55-82b4-066379edc977';
+  // Detect native Capacitor
+  var isNative = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
 
-    function initOneSignal() {
-        if (!window.OneSignal || Array.isArray(window.OneSignal)) {
-            console.warn('[OneSignal] SDK not ready yet');
-            setTimeout(initOneSignal, 1000);
-            return;
-        }
+  if (isNative) {
+    console.log('[OneSignal] Native mode — Web SDK not used. Capacitor plugin handles notifications.');
+    return; // 🛑 Yahan se wapas chale jayein, kuch nahi karna
+  }
 
-        var OS = window.OneSignal;
+  var ONESIGNAL_APP_ID = 'f9e441e6-0852-4f55-82b4-066379edc977';
 
-        try {
-            // v16 init
-            OS.init({ appId: ONESIGNAL_APP_ID });
-
-            // Permission request
-            OS.Notifications.requestPermission(true)
-                .then(function(accepted) {
-                    console.log('[OneSignal] Permission:', accepted ? '✓' : '✗');
-
-                    if (accepted) {
-                        tagEmployee();
-                    }
-                })
-                .catch(function(e) {
-                    console.warn('[OneSignal] Permission error:', e);
-                });
-
-            // Subscription change listener
-            OS.User.PushSubscription.addEventListener('change', function(e) {
-                console.log('[OneSignal] Subscription changed:', e);
-                if (e.current && e.current.optedIn) {
-                    tagEmployee();
-                }
-            });
-
-            console.log('[OneSignal] Web SDK v16 initialized ✓');
-        } catch(e) {
-            console.warn('[OneSignal] Init error:', e);
-        }
+  function initOneSignal() {
+    if (!window.OneSignal || Array.isArray(window.OneSignal)) {
+      console.warn('[OneSignal] SDK not ready yet');
+      setTimeout(initOneSignal, 1000);
+      return;
     }
 
-    function tagEmployee() {
-        try {
-            var raw = localStorage.getItem('dmSession');
-            if (raw) {
-                var session = JSON.parse(raw);
-                var userName = session.name || session.playerId || '';
-                if (userName && window.OneSignal && window.OneSignal.User) {
-                    window.OneSignal.User.addTag('employee_name', userName);
-                    window.OneSignal.User.addTag('app_version', '2.1');
-                    console.log('[OneSignal] Tagged:', userName);
-                }
-            }
-        } catch(e) {
-            console.warn('[OneSignal] Tag error:', e);
-        }
-    }
+    var OS = window.OneSignal;
 
-    // SDK load hone ka wait karo
-    function waitForSDK() {
-        if (window.OneSignal && !Array.isArray(window.OneSignal)) {
+    try {
+      OS.init({ appId: ONESIGNAL_APP_ID });
+
+      OS.Notifications.requestPermission(true)
+        .then(function(accepted) {
+          console.log('[OneSignal] Permission:', accepted ? '✓' : '✗');
+          if (accepted) tagEmployee();
+        })
+        .catch(function(e) {
+          console.warn('[OneSignal] Permission error:', e);
+        });
+
+      if (OS.User && OS.User.PushSubscription) {
+        OS.User.PushSubscription.addEventListener('change', function(e) {
+          console.log('[OneSignal] Subscription changed:', e);
+          if (e.current && e.current.optedIn) tagEmployee();
+        });
+      }
+
+      console.log('[OneSignal] Web SDK v16 initialized ✓ (browser mode)');
+    } catch(e) {
+      console.warn('[OneSignal] Init error:', e);
+    }
+  }
+
+  function tagEmployee() {
+    try {
+      var raw = localStorage.getItem('dmSession');
+      if (raw) {
+        var session = JSON.parse(raw);
+        var userName = session.name || session.playerId || '';
+        if (userName && window.OneSignal && window.OneSignal.User) {
+          window.OneSignal.User.addTag('employee_name', userName);
+          window.OneSignal.User.addTag('app_version', '2.1');
+          console.log('[OneSignal] Tagged:', userName);
+        }
+      }
+    } catch(e) {
+      console.warn('[OneSignal] Tag error:', e);
+    }
+  }
+
+  // Web SDK load hone ka wait
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      if (window.OneSignal && !Array.isArray(window.OneSignal)) {
+        initOneSignal();
+      } else {
+        setTimeout(function wait() {
+          if (window.OneSignal && !Array.isArray(window.OneSignal)) {
             initOneSignal();
-        } else {
-            setTimeout(waitForSDK, 500);
-        }
-    }
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', waitForSDK);
+          } else {
+            setTimeout(wait, 500);
+          }
+        }, 500);
+      }
+    });
+  } else {
+    if (window.OneSignal && !Array.isArray(window.OneSignal)) {
+      initOneSignal();
     } else {
-        waitForSDK();
+      setTimeout(function wait() {
+        if (window.OneSignal && !Array.isArray(window.OneSignal)) {
+          initOneSignal();
+        } else {
+          setTimeout(wait, 500);
+        }
+      }, 500);
     }
+  }
 })();
