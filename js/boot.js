@@ -553,54 +553,72 @@ setTimeout(function() {
 
 /* ═══════════════════════════════════════
    ONESIGNAL PUSH NOTIFICATIONS
-   Package: @onesignal/capacitor-plugin@5.2.0
+   Package: onesignal-cordova-plugin v5.4.0
    Capacitor 6 compatible
 ═══════════════════════════════════════ */
 (function() {
     var ONESIGNAL_APP_ID = 'f9e441e6-0852-4f55-82b4-066379edc977';
 
     function initOneSignal() {
-        // v5 mein window.plugins.OneSignal ki jagah window.OneSignal use hota hai
-        if (!window.OneSignal) {
-            console.warn('[OneSignal] Plugin not loaded');
+        // onesignal-cordova-plugin v5 — window.OneSignal pe available hota hai
+        var OS = window.OneSignal;
+
+        if (!OS) {
+            console.warn('[OneSignal] window.OneSignal nahi mila');
             return;
         }
 
         try {
-            // 1. Debug level set karein
-            window.OneSignal.Debug.setLogLevel(6);
+            // v5 cordova plugin syntax
+            OS.initialize(ONESIGNAL_APP_ID);
 
-            // 2. Initialize (v5 mein startInit/endInit nahi hota)
-            window.OneSignal.initialize(ONESIGNAL_APP_ID);
-            console.log('[OneSignal] Initialized (v5)');
+            // Notification permission request
+            OS.Notifications.requestPermission(true)
+                .then(function(accepted) {
+                    console.log('[OneSignal] Permission:', accepted ? '✓ granted' : '✗ denied');
+                })
+                .catch(function(e) {
+                    console.warn('[OneSignal] Permission error:', e);
+                });
 
-            // 3. Permission mangna
-            window.OneSignal.Notifications.requestPermission(true).then((accepted) => {
-                console.log('[OneSignal] Permission:', accepted ? 'granted' : 'denied');
+            // Notification click handler
+            OS.Notifications.addEventListener('click', function(e) {
+                console.log('[OneSignal] Clicked:', e);
             });
 
-            // 4. Tagging (v5 mein sendTag ki jagah addTag hota hai)
+            // Employee tag — admin specific employee ko target kar sake
             function tryTagUser() {
-                var userName = localStorage.getItem('dm_username') || '';
-                
+                var userName = '';
+                try {
+                    var auth = JSON.parse(localStorage.getItem('dm_auth') || '{}');
+                    userName = auth.name || auth.username || auth.user || '';
+                    if (!userName) {
+                        userName = localStorage.getItem('dm_username') ||
+                                   localStorage.getItem('userName') || '';
+                    }
+                } catch(e) {}
+
                 if (userName) {
-                    window.OneSignal.User.addTag('employee_name', userName);
-                    window.OneSignal.User.addTag('app_version', '2.1');
-                    console.log('[OneSignal] Tags sent:', userName);
+                    OS.User.addTag('employee_name', userName);
+                    OS.User.addTag('app_version', '2.1');
+                    console.log('[OneSignal] Tagged:', userName);
                 } else {
                     setTimeout(tryTagUser, 3000);
                 }
             }
+
             setTimeout(tryTagUser, 2000);
+            console.log('[OneSignal] Initialized ✓');
 
         } catch(e) {
-            console.error('[OneSignal] Init error:', e);
+            console.warn('[OneSignal] Init error:', e);
         }
     }
 
-    if (window.cordova) {
-        document.addEventListener('deviceready', initOneSignal, false);
-    } else {
+    if (window.__capacitorReady) {
         initOneSignal();
+    } else {
+        window.addEventListener('capacitorPluginsReady', initOneSignal);
+        setTimeout(initOneSignal, 3000);
     }
 })();
