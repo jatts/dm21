@@ -160,8 +160,30 @@
             tryInitPlugins();
         })();
     </script>
-  <!-- OneSignal Web SDK -->
-  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+
+    <!-- ═══════════════════════════════════════
+         ONESIGNAL WEB SDK — CONDITIONAL LOAD
+         Sirf browser mode mein load karein,
+         Capacitor native app mein skip karein.
+    ═══════════════════════════════════════ -->
+    <script>
+        (function() {
+            // Detect if running inside Capacitor native app
+            var isNative = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
+
+            if (!isNative) {
+                console.log('🌐 Browser mode — Loading OneSignal Web SDK');
+                var script = document.createElement('script');
+                script.src = 'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js';
+                script.async = true;
+                script.defer = true;
+                document.head.appendChild(script);
+            } else {
+                console.log('📱 Native mode — Web SDK SKIPPED, Capacitor plugin will be used');
+            }
+        })();
+    </script>
+
 </head>
 <body>
 
