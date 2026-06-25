@@ -992,5 +992,211 @@
         </div>
     </div>
 </div>
+
+<!-- ═══ ONESIGNAL DEBUG PANEL ═══ -->
+<div id="osDebugPanel" style="
+    position:fixed; bottom:60px; left:8px; right:8px; z-index:99999;
+    background:rgba(0,0,0,0.92); border-radius:12px; padding:12px;
+    font-family:monospace; font-size:11px; color:#fff;
+    border:1px solid #333; display:none;
+    max-height:50vh; overflow-y:auto;
+">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-weight:700;color:#6366f1">🔔 OneSignal Debug</span>
+        <button onclick="document.getElementById('osDebugPanel').style.display='none'"
+            style="background:none;border:none;color:#fff;font-size:16px;cursor:pointer">✕</button>
+    </div>
+    <div id="osDebugLines"></div>
+    <div style="margin-top:10px;border-top:1px solid #333;padding-top:8px">
+        <button onclick="osDebugRefresh()" style="background:#6366f1;border:none;color:#fff;
+            padding:6px 12px;border-radius:8px;font-size:11px;cursor:pointer;margin-right:6px">
+            🔄 Refresh
+        </button>
+        <button onclick="osDebugRequestPermission()" style="background:#22c55e;border:none;color:#fff;
+            padding:6px 12px;border-radius:8px;font-size:11px;cursor:pointer">
+            🔔 Request Permission
+        </button>
+    </div>
+</div>
+
+<!-- Toggle button — Settings page pe jaane ke baad visible hoga -->
+<button id="osDebugToggle" onclick="osDebugShow()" style="
+    position:fixed; bottom:70px; right:8px; z-index:99998;
+    background:#6366f1; border:none; color:#fff;
+    width:36px; height:36px; border-radius:50%;
+    font-size:16px; cursor:pointer; display:none;
+    box-shadow:0 2px 8px rgba(0,0,0,0.4);
+">🔔</button>
+
+<script>
+// Debug panel show karo
+function osDebugShow() {
+    document.getElementById('osDebugPanel').style.display = 'block';
+    osDebugRefresh();
+}
+
+function osDebugLog(msg, color) {
+    color = color || '#e2e8f0';
+    var time = new Date().toLocaleTimeString();
+    var el = document.getElementById('osDebugLines');
+    if (el) {
+        el.innerHTML += '<div style="color:' + color + ';padding:2px 0;border-bottom:1px solid #222">' +
+            '<span style="color:#475569">' + time + '</span> ' + msg + '</div>';
+        el.scrollTop = el.scrollHeight;
+    }
+    console.log('[OS-DEBUG]', msg);
+}
+
+function osDebugRefresh() {
+    var el = document.getElementById('osDebugLines');
+    if (el) el.innerHTML = '';
+
+    // 1. Capacitor check
+    var hasCapacitor = !!(window.Capacitor);
+    osDebugLog('Capacitor: ' + (hasCapacitor ? '✅ Present' : '❌ Missing'),
+        hasCapacitor ? '#4ade80' : '#f87171');
+
+    // 2. OneSignal plugin check
+    var OS = window.OneSignal ||
+             (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.OneSignal);
+    osDebugLog('OneSignal plugin: ' + (OS ? '✅ Found' : '❌ NOT FOUND'),
+        OS ? '#4ade80' : '#f87171');
+
+    // 3. window.OneSignal specifically
+    osDebugLog('window.OneSignal: ' + (window.OneSignal ? '✅' : '❌'),
+        window.OneSignal ? '#4ade80' : '#f87171');
+
+    // 4. Capacitor.Plugins.OneSignal
+    var capOS = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.OneSignal;
+    osDebugLog('Capacitor.Plugins.OneSignal: ' + (capOS ? '✅' : '❌'),
+        capOS ? '#4ade80' : '#f87171');
+
+    // 5. Platform check
+    var platform = window.Capacitor ? window.Capacitor.getPlatform() : 'web';
+    osDebugLog('Platform: ' + platform,
+        platform === 'android' ? '#4ade80' : '#fbbf24');
+
+    // 6. Native app check
+    var isNative = window.Capacitor && window.Capacitor.isNativePlatform();
+    osDebugLog('isNativePlatform: ' + (isNative ? '✅ YES' : '❌ NO (web)'),
+        isNative ? '#4ade80' : '#fbbf24');
+
+    // 7. OneSignal initialize attempt
+    if (OS) {
+        try {
+            var appId = OS.getAppId ? OS.getAppId() : 'N/A';
+            osDebugLog('AppID: ' + (appId || 'Not set'), '#a78bfa');
+        } catch(e) {}
+
+        // Permission status
+        try {
+            if (OS.Notifications && OS.Notifications.permission !== undefined) {
+                osDebugLog('Permission: ' + (OS.Notifications.permission ? '✅ Granted' : '❌ Denied'),
+                    OS.Notifications.permission ? '#4ade80' : '#f87171');
+            }
+        } catch(e) {}
+
+        // User ID / Player ID
+        try {
+            if (OS.User && OS.User.onesignalId) {
+                OS.User.onesignalId.then(function(id) {
+                    osDebugLog('OneSignal ID: ' + (id || 'null'), id ? '#4ade80' : '#f87171');
+                }).catch(function() {});
+            } else if (OS.User && OS.User.getOnesignalId) {
+                OS.User.getOnesignalId().then(function(id) {
+                    osDebugLog('OneSignal ID: ' + (id || 'null'), id ? '#4ade80' : '#f87171');
+                }).catch(function() {});
+            }
+        } catch(e) {
+            osDebugLog('User ID check error: ' + e.message, '#f87171');
+        }
+
+        // Push subscription
+        try {
+            if (OS.User && OS.User.PushSubscription) {
+                var sub = OS.User.PushSubscription;
+                osDebugLog('Push Token: ' + (sub.token ? sub.token.substring(0,20)+'...' : 'null'),
+                    sub.token ? '#4ade80' : '#f87171');
+                osDebugLog('Subscribed: ' + (sub.optedIn ? '✅' : '❌'),
+                    sub.optedIn ? '#4ade80' : '#f87171');
+            }
+        } catch(e) {
+            osDebugLog('Subscription check error: ' + e.message, '#f87171');
+        }
+    }
+
+    // 8. FCM / google-services check (indirect)
+    osDebugLog('--- FCM Check ---', '#a78bfa');
+    if (isNative) {
+        osDebugLog('Native mode — FCM via google-services.json', '#fbbf24');
+        osDebugLog('Agar subscribe nahi ho raha to:', '#fbbf24');
+        osDebugLog('  → google-services.json missing/wrong?', '#fbbf24');
+        osDebugLog('  → FCM Server Key OneSignal mein sahi?', '#fbbf24');
+    } else {
+        osDebugLog('Web mode — FCM kaam nahi karega', '#f87171');
+        osDebugLog('APK se test karo, browser se nahi', '#f87171');
+    }
+
+    // 9. LocalStorage auth check
+    osDebugLog('--- Auth Check ---', '#a78bfa');
+    try {
+        var auth = JSON.parse(localStorage.getItem('dm_auth') || '{}');
+        var uname = auth.name || auth.username || auth.user || '';
+        osDebugLog('Employee name: ' + (uname || '❌ NOT SET'), uname ? '#4ade80' : '#f87171');
+    } catch(e) {
+        osDebugLog('Auth read error', '#f87171');
+    }
+}
+
+function osDebugRequestPermission() {
+    var OS = window.OneSignal ||
+             (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.OneSignal);
+    if (!OS) {
+        osDebugLog('❌ OneSignal nahi mila — request nahi ho sakti', '#f87171');
+        return;
+    }
+    osDebugLog('Permission request kar raha hoon...', '#fbbf24');
+    try {
+        if (OS.Notifications && OS.Notifications.requestPermission) {
+            OS.Notifications.requestPermission(true)
+                .then(function(accepted) {
+                    osDebugLog('Permission result: ' + (accepted ? '✅ Granted' : '❌ Denied'),
+                        accepted ? '#4ade80' : '#f87171');
+                    setTimeout(osDebugRefresh, 1000);
+                }).catch(function(e) {
+                    osDebugLog('Error: ' + e.message, '#f87171');
+                });
+        } else if (OS.promptForPushNotificationsWithUserResponse) {
+            OS.promptForPushNotificationsWithUserResponse(function(accepted) {
+                osDebugLog('Permission: ' + (accepted ? '✅' : '❌'),
+                    accepted ? '#4ade80' : '#f87171');
+            });
+        }
+    } catch(e) {
+        osDebugLog('Exception: ' + e.message, '#f87171');
+    }
+}
+
+// Settings page pe debug button show karo
+document.addEventListener('DOMContentLoaded', function() {
+    // Settings tab click pe show karo
+    var settingsTab = document.querySelector('[data-tab="settings"], #settingsTab, .tab-settings');
+    if (settingsTab) {
+        settingsTab.addEventListener('click', function() {
+            document.getElementById('osDebugToggle').style.display = 'flex';
+            document.getElementById('osDebugToggle').style.alignItems = 'center';
+            document.getElementById('osDebugToggle').style.justifyContent = 'center';
+        });
+    }
+
+    // Fallback — hamesha dikhao (test ke liye)
+    setTimeout(function() {
+        document.getElementById('osDebugToggle').style.display = 'flex';
+        document.getElementById('osDebugToggle').style.alignItems = 'center';
+        document.getElementById('osDebugToggle').style.justifyContent = 'center';
+    }, 2000);
+});
+</script>
+
 </body>
 </html>
