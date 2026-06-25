@@ -1137,14 +1137,33 @@ function osDebugRefresh() {
         osDebugLog('APK se test karo, browser se nahi', '#f87171');
     }
 
-    // 9. LocalStorage auth check
+    // 9. LocalStorage auth check — dmSession key
     osDebugLog('--- Auth Check ---', '#a78bfa');
     try {
-        var auth = JSON.parse(localStorage.getItem('dm_auth') || '{}');
-        var uname = auth.name || auth.username || auth.user || '';
-        osDebugLog('Employee name: ' + (uname || '❌ NOT SET'), uname ? '#4ade80' : '#f87171');
+        var raw = localStorage.getItem('dmSession');
+        if (raw) {
+            var session = JSON.parse(raw);
+            var uname = session.name || session.playerId || '';
+            osDebugLog('dmSession found ✅', '#4ade80');
+            osDebugLog('Employee name: ' + (uname || '❌ NOT SET'), uname ? '#4ade80' : '#f87171');
+            osDebugLog('Player ID: ' + (session.playerId || 'N/A'), '#a78bfa');
+        } else {
+            osDebugLog('dmSession: ❌ NOT FOUND — login karo pehle', '#f87171');
+        }
     } catch(e) {
-        osDebugLog('Auth read error', '#f87171');
+        osDebugLog('Auth read error: ' + e.message, '#f87171');
+    }
+
+    // 10. OneSignal AppID check
+    osDebugLog('--- Init Check ---', '#a78bfa');
+    if (OS && OS.getAppId) {
+        try {
+            var aid = OS.getAppId();
+            osDebugLog('AppID set: ' + (aid ? '✅ ' + aid.substring(0,8)+'...' : '❌ NOT SET'),
+                aid ? '#4ade80' : '#f87171');
+        } catch(e) {
+            osDebugLog('AppID check error: ' + e.message, '#f87171');
+        }
     }
 }
 
