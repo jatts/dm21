@@ -552,54 +552,81 @@ setTimeout(function() {
 
 
 /* ═══════════════════════════════════════
-   ONESIGNAL WEB SDK
-   CDN loaded — no native plugin needed
+   ONESIGNAL WEB SDK v16
+   CDN: cdn.onesignal.com/sdks/web/v16
 ═══════════════════════════════════════ */
 (function() {
     var ONESIGNAL_APP_ID = 'f9e441e6-0852-4f55-82b4-066379edc977';
 
     function initOneSignal() {
-        window.OneSignal = window.OneSignal || [];
+        if (!window.OneSignal || Array.isArray(window.OneSignal)) {
+            console.warn('[OneSignal] SDK not ready yet');
+            setTimeout(initOneSignal, 1000);
+            return;
+        }
 
-        window.OneSignal.push(function() {
-            window.OneSignal.init({
-                appId: ONESIGNAL_APP_ID,
-                allowLocalhostAsSecureOrigin: true,
-                notifyButton: { enable: false },
-                welcomeNotification: { disable: true }
-            });
+        var OS = window.OneSignal;
 
-            window.OneSignal.push(['registerForPushNotifications']);
+        try {
+            // v16 init
+            OS.init({ appId: ONESIGNAL_APP_ID });
 
-            window.OneSignal.getUserId(function(userId) {
-                console.log('[OneSignal] UserID:', userId);
-            });
+            // Permission request
+            OS.Notifications.requestPermission(true)
+                .then(function(accepted) {
+                    console.log('[OneSignal] Permission:', accepted ? '✓' : '✗');
 
-            window.OneSignal.on('subscriptionChange', function(isSubscribed) {
-                console.log('[OneSignal] Subscribed:', isSubscribed);
-                if (isSubscribed) {
-                    try {
-                        var raw = localStorage.getItem('dmSession');
-                        if (raw) {
-                            var session = JSON.parse(raw);
-                            var userName = session.name || session.playerId || '';
-                            if (userName) {
-                                window.OneSignal.sendTag('employee_name', userName);
-                                window.OneSignal.sendTag('app_version', '2.1');
-                                console.log('[OneSignal] Tagged:', userName);
-                            }
-                        }
-                    } catch(e) {}
+                    if (accepted) {
+                        tagEmployee();
+                    }
+                })
+                .catch(function(e) {
+                    console.warn('[OneSignal] Permission error:', e);
+                });
+
+            // Subscription change listener
+            OS.User.PushSubscription.addEventListener('change', function(e) {
+                console.log('[OneSignal] Subscription changed:', e);
+                if (e.current && e.current.optedIn) {
+                    tagEmployee();
                 }
             });
 
-            console.log('[OneSignal] Web SDK initialized ✓');
-        });
+            console.log('[OneSignal] Web SDK v16 initialized ✓');
+        } catch(e) {
+            console.warn('[OneSignal] Init error:', e);
+        }
+    }
+
+    function tagEmployee() {
+        try {
+            var raw = localStorage.getItem('dmSession');
+            if (raw) {
+                var session = JSON.parse(raw);
+                var userName = session.name || session.playerId || '';
+                if (userName && window.OneSignal && window.OneSignal.User) {
+                    window.OneSignal.User.addTag('employee_name', userName);
+                    window.OneSignal.User.addTag('app_version', '2.1');
+                    console.log('[OneSignal] Tagged:', userName);
+                }
+            }
+        } catch(e) {
+            console.warn('[OneSignal] Tag error:', e);
+        }
+    }
+
+    // SDK load hone ka wait karo
+    function waitForSDK() {
+        if (window.OneSignal && !Array.isArray(window.OneSignal)) {
+            initOneSignal();
+        } else {
+            setTimeout(waitForSDK, 500);
+        }
     }
 
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initOneSignal);
+        document.addEventListener('DOMContentLoaded', waitForSDK);
     } else {
-        initOneSignal();
+        waitForSDK();
     }
 })();
