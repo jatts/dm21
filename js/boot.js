@@ -554,115 +554,117 @@ setTimeout(function() {
 /* ═══════════════════════════════════════
    PUSH NOTIFICATIONS via @capacitor/push-notifications
    + OneSignal REST API registration
-   No OneSignal SDK — pure Capacitor + REST
+   SAFE — try/catch har step mein
 ═══════════════════════════════════════ */
 (function() {
-  const isNative = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
-  if (!isNative) {
-    console.log('[Push] Browser mode — push notifications not available');
-    return;
-  }
-
-  const PushNotifications = window.Capacitor?.Plugins?.PushNotifications;
-  if (!PushNotifications) {
-    console.warn('[Push] PushNotifications plugin not available. Is @capacitor/push-notifications installed?');
-    return;
-  }
-
-  const ONESIGNAL_APP_ID = 'f9e441e6-0852-4f55-82b4-066379edc977';
-
-  async function registerWithOneSignal(fcmToken) {
-    const session = JSON.parse(localStorage.getItem('dmSession') || '{}');
-    const playerId = session.playerId || '222';
-    const name = session.name || 'jamil';
-
-    const payload = {
-      app_id: ONESIGNAL_APP_ID,
-      identifier: fcmToken,
-      device_type: 2, // Android
-      tags: {
-        employee_name: name,
-        player_id: playerId,
-        app_version: '2.1'
-      },
-      external_user_id: playerId
-    };
-
-    try {
-      const response = await fetch('https://onesignal.com/api/v1/players', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        console.log('✅ OneSignal registered:', result);
-        localStorage.setItem('fcmToken', fcmToken);
-      } else {
-        const text = await response.text();
-        console.error('❌ OneSignal registration failed:', response.status, text);
-      }
-    } catch (e) {
-      console.error('❌ REST API error:', e);
+  try {
+    // Check if Capacitor is available and native
+    if (!window.Capacitor || !window.Capacitor.isNativePlatform()) {
+      console.log('[Push] Browser mode — push notifications not available');
+      return;
     }
-  }
 
-  async function initPush() {
-    try {
-      // 1. Check permission
-      let perm = await PushNotifications.checkPermissions();
-      if (perm.receive !== 'granted') {
-        perm = await PushNotifications.requestPermissions();
+    // Get plugin from Capacitor
+    const PushNotifications = window.Capacitor.Plugins?.PushNotifications;
+    if (!PushNotifications) {
+      console.warn('[Push] PushNotifications plugin not available. Is @capacitor/push-notifications installed?');
+      return;
+    }
+
+    const ONESIGNAL_APP_ID = 'f9e441e6-0852-4f55-82b4-066379edc977';
+
+    async function registerWithOneSignal(fcmToken) {
+      try {
+        const session = JSON.parse(localStorage.getItem('dmSession') || '{}');
+        const playerId = session.playerId || '222';
+        const name = session.name || 'jamil';
+
+        const payload = {
+          app_id: ONESIGNAL_APP_ID,
+          identifier: fcmToken,
+          device_type: 2,
+          tags: {
+            employee_name: name,
+            player_id: playerId,
+            app_version: '2.1'
+          },
+          external_user_id: playerId
+        };
+
+        const response = await fetch('https://onesignal.com/api/v1/players', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          console.log('✅ OneSignal registered:', result);
+          localStorage.setItem('fcmToken', fcmToken);
+        } else {
+          const text = await response.text();
+          console.error('❌ OneSignal registration failed:', response.status, text);
+        }
+      } catch (e) {
+        console.error('❌ REST API error:', e);
+        // Don't crash
+      }
+    }
+
+    async function initPush() {
+      try {
+        // 1. Check permission
+        let perm = await PushNotifications.checkPermissions();
         if (perm.receive !== 'granted') {
-          console.warn('[Push] Permission denied');
-          return;
+          perm = await PushNotifications.requestPermissions();
+          if (perm.receive !== 'granted') {
+            console.warn('[Push] Permission denied');
+            return;
+          }
         }
+
+        // 2. Register with FCM
+        await PushNotifications.register();
+
+        // 3. Listen for FCM token
+        PushNotifications.addListener('registration', async (token) => {
+          console.log('✅ FCM Token:', token.value);
+          await registerWithOneSignal(token.value);
+        });
+
+        // 4. Handle incoming notifications
+        PushNotifications.addListener('pushNotificationReceived', (notif) => {
+          console.log('📱 Notification received:', notif);
+          if (window.showToast) {
+            window.showToast(notif.title + ': ' + notif.body, 'info', 3000);
+          }
+        });
+
+        PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
+          console.log('📱 Notification clicked:', action);
+        });
+
+        // 5. Re-register if token already stored
+        const storedToken = localStorage.getItem('fcmToken');
+        if (storedToken) {
+          await registerWithOneSignal(storedToken);
+        }
+
+        console.log('[Push] Initialization complete');
+      } catch (e) {
+        console.error('[Push] Init error:', e);
+        // Don't crash — just log
       }
-
-      // 2. Register with FCM
-      await PushNotifications.register();
-
-      // 3. Listen for FCM token
-      PushNotifications.addListener('registration', async (token) => {
-        console.log('✅ FCM Token:', token.value);
-        await registerWithOneSignal(token.value);
-      });
-
-      // 4. Handle incoming notifications
-      PushNotifications.addListener('pushNotificationReceived', (notif) => {
-        console.log('📱 Notification received:', notif);
-        // Optional: show toast
-        if (window.showToast) {
-          window.showToast(notif.title + ': ' + notif.body, 'info', 3000);
-        }
-      });
-
-      PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
-        console.log('📱 Notification clicked:', action);
-        // Handle deep link if needed
-        if (action.notification.data && action.notification.data.url) {
-          // Optionally navigate
-        }
-      });
-
-      // 5. If token already stored (after app restart)
-      const storedToken = localStorage.getItem('fcmToken');
-      if (storedToken) {
-        // Re-register with OneSignal (in case tags changed)
-        await registerWithOneSignal(storedToken);
-      }
-
-      console.log('[Push] Initialization complete');
-    } catch (e) {
-      console.error('[Push] Init error:', e);
     }
-  }
 
-  // Run after Capacitor is ready
-  if (window.__capacitorReady) {
-    initPush();
-  } else {
-    window.addEventListener('capacitorPluginsReady', initPush);
+    // Run when Capacitor is ready
+    if (window.__capacitorReady) {
+      initPush();
+    } else {
+      window.addEventListener('capacitorPluginsReady', initPush);
+    }
+  } catch (globalError) {
+    console.error('[Push] Fatal error:', globalError);
+    // Never crash the app
   }
 })();
