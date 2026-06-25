@@ -184,6 +184,31 @@
         })();
     </script>
 
+    <!-- ═══════════════════════════════════════
+         ONESIGNAL NATIVE PLUGIN — LOAD VIA IMPORT
+         Sirf Capacitor native environment mein chalega
+    ═══════════════════════════════════════ -->
+    <script type="module">
+        if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+            try {
+                const { OneSignal } = await import('@onesignal/capacitor-plugin');
+                window.OneSignalNative = OneSignal;
+                console.log('✅ OneSignal native plugin loaded via import');
+                // Also dispatch an event so boot.js can know it's ready
+                window.dispatchEvent(new Event('onesignalNativeReady'));
+            } catch (e) {
+                console.warn('⚠️ Could not import @onesignal/capacitor-plugin. Trying Capacitor.Plugins fallback...');
+                if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.OneSignal) {
+                    window.OneSignalNative = window.Capacitor.Plugins.OneSignal;
+                    console.log('✅ OneSignal native plugin found in Capacitor.Plugins');
+                    window.dispatchEvent(new Event('onesignalNativeReady'));
+                } else {
+                    console.error('❌ OneSignal native plugin not available');
+                }
+            }
+        }
+    </script>
+
 </head>
 <body>
 
