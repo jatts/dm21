@@ -554,13 +554,12 @@ setTimeout(function() {
 /* ═══════════════════════════════════════
    ONESIGNAL PUSH NOTIFICATIONS
    Package: onesignal-cordova-plugin v5.4.0
-   Capacitor 6 compatible
+   Session key: dmSession → name field
 ═══════════════════════════════════════ */
 (function() {
     var ONESIGNAL_APP_ID = 'f9e441e6-0852-4f55-82b4-066379edc977';
 
     function initOneSignal() {
-        // onesignal-cordova-plugin v5 — window.OneSignal pe available hota hai
         var OS = window.OneSignal;
 
         if (!OS) {
@@ -569,46 +568,46 @@ setTimeout(function() {
         }
 
         try {
-            // v5 cordova plugin syntax
-            OS.initialize(ONESIGNAL_APP_ID);
+            // onesignal-cordova-plugin v5 — setAppId syntax
+            OS.setAppId(ONESIGNAL_APP_ID);
 
-            // Notification permission request
-            OS.Notifications.requestPermission(true)
-                .then(function(accepted) {
-                    console.log('[OneSignal] Permission:', accepted ? '✓ granted' : '✗ denied');
-                })
-                .catch(function(e) {
-                    console.warn('[OneSignal] Permission error:', e);
-                });
-
-            // Notification click handler
-            OS.Notifications.addEventListener('click', function(e) {
-                console.log('[OneSignal] Clicked:', e);
+            // Permission request
+            OS.promptForPushNotificationsWithUserResponse(function(accepted) {
+                console.log('[OneSignal] Permission:', accepted ? '✓ granted' : '✗ denied');
             });
 
-            // Employee tag — admin specific employee ko target kar sake
+            // Notification open handler
+            OS.setNotificationOpenedHandler(function(data) {
+                console.log('[OneSignal] Opened:', data);
+                if (data && data.notification && data.notification.launchURL) {
+                    window.open(data.notification.launchURL, '_blank');
+                }
+            });
+
+            // Employee tag — dmSession se name lo
             function tryTagUser() {
                 var userName = '';
                 try {
-                    var auth = JSON.parse(localStorage.getItem('dm_auth') || '{}');
-                    userName = auth.name || auth.username || auth.user || '';
-                    if (!userName) {
-                        userName = localStorage.getItem('dm_username') ||
-                                   localStorage.getItem('userName') || '';
+                    // Auth key: dmSession → name field
+                    var raw = localStorage.getItem('dmSession');
+                    if (raw) {
+                        var session = JSON.parse(raw);
+                        userName = session.name || session.playerId || '';
                     }
                 } catch(e) {}
 
                 if (userName) {
-                    OS.User.addTag('employee_name', userName);
-                    OS.User.addTag('app_version', '2.1');
+                    OS.sendTag('employee_name', userName);
+                    OS.sendTag('app_version', '2.1');
                     console.log('[OneSignal] Tagged:', userName);
                 } else {
+                    // Retry — session load hone do
                     setTimeout(tryTagUser, 3000);
                 }
             }
 
             setTimeout(tryTagUser, 2000);
-            console.log('[OneSignal] Initialized ✓');
+            console.log('[OneSignal] Initialized ✓ setAppId done');
 
         } catch(e) {
             console.warn('[OneSignal] Init error:', e);
