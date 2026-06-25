@@ -161,7 +161,7 @@
         })();
     </script>
   <!-- OneSignal Web SDK -->
-  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.es6.js" defer></script>
+  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 </head>
 <body>
 
@@ -1160,38 +1160,51 @@ function osDebugRefresh() {
     osDebugLog('--- Web SDK Status ---', '#a78bfa');
     
     if (OS && !Array.isArray(OS)) {
-        // SDK fully loaded
+        // Web SDK v16 API
         try {
-            OS.getUserId(function(uid) {
-                osDebugLog('UserID: ' + (uid ? '✅ ' + uid.substring(0,12)+'...' : '❌ null'), 
-                    uid ? '#4ade80' : '#f87171');
-            });
+            // v16: OS.User.PushSubscription
+            var sub = OS.User && OS.User.PushSubscription;
+            if (sub) {
+                osDebugLog('Push optedIn: ' + (sub.optedIn ? '✅ YES' : '❌ NO'),
+                    sub.optedIn ? '#4ade80' : '#f87171');
+                osDebugLog('Push token: ' + (sub.token ? '✅ ' + String(sub.token).substring(0,15)+'...' : '❌ null'),
+                    sub.token ? '#4ade80' : '#f87171');
+            } else {
+                osDebugLog('PushSubscription: ❌ not found', '#f87171');
+            }
         } catch(e) {
-            osDebugLog('getUserId error: ' + e.message, '#f87171');
+            osDebugLog('PushSub error: ' + e.message, '#f87171');
         }
 
         try {
-            OS.isPushNotificationsEnabled(function(enabled) {
-                osDebugLog('Push enabled: ' + (enabled ? '✅ YES' : '❌ NO'),
-                    enabled ? '#4ade80' : '#f87171');
-            });
+            // v16: OS.User.onesignalId
+            var uid = OS.User && OS.User.onesignalId;
+            osDebugLog('OneSignal ID: ' + (uid ? '✅ ' + String(uid).substring(0,12)+'...' : '❌ null'),
+                uid ? '#4ade80' : '#f87171');
         } catch(e) {
-            osDebugLog('isPushEnabled error: ' + e.message, '#f87171');
+            osDebugLog('UserID error: ' + e.message, '#f87171');
         }
 
         try {
-            OS.getNotificationPermission().then(function(perm) {
-                osDebugLog('Permission: ' + perm, perm === 'granted' ? '#4ade80' : '#f87171');
-            }).catch(function(){});
+            // v16: OS.Notifications.permission
+            var perm = OS.Notifications && OS.Notifications.permission;
+            osDebugLog('Notification permission: ' + (perm ? '✅ granted' : '❌ denied/default'),
+                perm ? '#4ade80' : '#f87171');
+        } catch(e) {
+            osDebugLog('Permission error: ' + e.message, '#f87171');
+        }
+
+        try {
+            // v16: OS.Notifications.permissionNative
+            var natPerm = OS.Notifications && OS.Notifications.permissionNative;
+            osDebugLog('Native permission: ' + (natPerm || 'unknown'), 
+                natPerm === 'granted' ? '#4ade80' : '#fbbf24');
         } catch(e) {}
 
     } else if (Array.isArray(OS)) {
-        osDebugLog('SDK CDN load ho rahi hai... wait karo', '#fbbf24');
-        osDebugLog('Ya HTTPS zaroori hai Web SDK ke liye', '#fbbf24');
-        osDebugLog('GitHub Pages URL: https://jatts.github.io/dm21/', '#a78bfa');
+        osDebugLog('SDK ab bhi load ho rahi hai...', '#fbbf24');
     } else {
         osDebugLog('❌ OneSignal SDK nahi mila', '#f87171');
-        osDebugLog('CDN block ho rahi hai?', '#f87171');
     }
 }
 
@@ -1204,20 +1217,18 @@ function osDebugRequestPermission() {
     }
     osDebugLog('Permission request kar raha hoon...', '#fbbf24');
     try {
+        // v16 API
         if (OS.Notifications && OS.Notifications.requestPermission) {
             OS.Notifications.requestPermission(true)
                 .then(function(accepted) {
                     osDebugLog('Permission result: ' + (accepted ? '✅ Granted' : '❌ Denied'),
                         accepted ? '#4ade80' : '#f87171');
-                    setTimeout(osDebugRefresh, 1000);
+                    setTimeout(osDebugRefresh, 2000);
                 }).catch(function(e) {
                     osDebugLog('Error: ' + e.message, '#f87171');
                 });
-        } else if (OS.promptForPushNotificationsWithUserResponse) {
-            OS.promptForPushNotificationsWithUserResponse(function(accepted) {
-                osDebugLog('Permission: ' + (accepted ? '✅' : '❌'),
-                    accepted ? '#4ade80' : '#f87171');
-            });
+        } else {
+            osDebugLog('requestPermission method nahi mila', '#f87171');
         }
     } catch(e) {
         osDebugLog('Exception: ' + e.message, '#f87171');
