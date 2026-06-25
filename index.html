@@ -1154,17 +1154,59 @@ function osDebugRefresh() {
         osDebugLog('Auth read error: ' + e.message, '#f87171');
     }
 
-    // 10. OneSignal AppID check
+    // 10. Deep OneSignal check
     osDebugLog('--- Init Check ---', '#a78bfa');
-    if (OS && OS.getAppId) {
-        try {
-            var aid = OS.getAppId();
-            osDebugLog('AppID set: ' + (aid ? '✅ ' + aid.substring(0,8)+'...' : '❌ NOT SET'),
-                aid ? '#4ade80' : '#f87171');
-        } catch(e) {
-            osDebugLog('AppID check error: ' + e.message, '#f87171');
-        }
+    
+    // Available methods check
+    var methods = [];
+    if (OS) {
+        ['setAppId','initialize','getAppId','promptForPushNotificationsWithUserResponse',
+         'Notifications','User','PushSubscription'].forEach(function(m) {
+            if (OS[m]) methods.push(m);
+        });
+        osDebugLog('Methods: ' + (methods.length ? methods.join(', ') : 'NONE'), '#a78bfa');
     }
+
+    // Direct setAppId try karo
+    if (OS && OS.setAppId) {
+        try {
+            OS.setAppId('f9e441e6-0852-4f55-82b4-066379edc977');
+            osDebugLog('setAppId(): ✅ called', '#4ade80');
+        } catch(e) {
+            osDebugLog('setAppId() error: ' + e.message, '#f87171');
+        }
+    } else if (OS && OS.initialize) {
+        try {
+            OS.initialize('f9e441e6-0852-4f55-82b4-066379edc977');
+            osDebugLog('initialize(): ✅ called', '#4ade80');
+        } catch(e) {
+            osDebugLog('initialize() error: ' + e.message, '#f87171');
+        }
+    } else {
+        osDebugLog('❌ No init method found!', '#f87171');
+    }
+
+    // Push subscription status
+    setTimeout(function() {
+        try {
+            if (OS && OS.User && OS.User.PushSubscription) {
+                var ps = OS.User.PushSubscription;
+                osDebugLog('Push optedIn: ' + (ps.optedIn ? '✅' : '❌'), ps.optedIn ? '#4ade80' : '#f87171');
+                osDebugLog('Push token: ' + (ps.token ? ps.token.substring(0,15)+'...' : '❌ null'), ps.token ? '#4ade80' : '#f87171');
+            }
+            if (OS && OS.getDeviceState) {
+                OS.getDeviceState().then(function(state) {
+                    osDebugLog('deviceState userId: ' + (state.userId || 'null'), state.userId ? '#4ade80' : '#f87171');
+                    osDebugLog('deviceState pushToken: ' + (state.pushToken ? state.pushToken.substring(0,15)+'...' : 'null'), state.pushToken ? '#4ade80' : '#f87171');
+                    osDebugLog('deviceState subscribed: ' + (state.isSubscribed ? '✅' : '❌'), state.isSubscribed ? '#4ade80' : '#f87171');
+                }).catch(function(e) {
+                    osDebugLog('getDeviceState error: ' + e.message, '#f87171');
+                });
+            }
+        } catch(e) {
+            osDebugLog('Subscription check error: ' + e.message, '#f87171');
+        }
+    }, 500);
 }
 
 function osDebugRequestPermission() {
