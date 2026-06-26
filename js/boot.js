@@ -676,11 +676,16 @@ setTimeout(function() {
         console.log('[Push] Initialized');
     }
 
+    function delayedPushInit() {
+        // 2 second wait — Capacitor bridge fully ready hone do
+        setTimeout(initPushNotifications, 2000);
+    }
+
     if (window.__capacitorReady) {
-        initPushNotifications();
+        delayedPushInit();
     } else {
-        window.addEventListener('capacitorPluginsReady', initPushNotifications);
-        setTimeout(initPushNotifications, 3000);
+        window.addEventListener('capacitorPluginsReady', delayedPushInit);
+        setTimeout(initPushNotifications, 5000); // extra fallback
     }
 })();
 
