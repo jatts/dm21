@@ -627,19 +627,14 @@ setTimeout(function() {
     }
 
     function initPushNotifications() {
-        // window.CapPush — index.html mein Capacitor bridge se assigned
-        // Fallback: directly Capacitor.Plugins se bhi try karo
-        var PushNotifications = window.CapPush ||
-                                (window.Capacitor &&
-                                 window.Capacitor.Plugins &&
-                                 window.Capacitor.Plugins.PushNotifications);
+        var PushNotifications = window.Capacitor &&
+                                window.Capacitor.Plugins &&
+                                window.Capacitor.Plugins.PushNotifications;
 
         if (!PushNotifications) {
-            console.warn('[Push] PushNotifications plugin nahi mila — CapPush:', !!window.CapPush);
+            console.warn('[Push] Plugin nahi mila');
             return;
         }
-
-        console.log('[Push] Plugin found, initializing...');
 
         PushNotifications.checkPermissions().then(function(result) {
             if (result.receive === 'granted') {
@@ -664,11 +659,7 @@ setTimeout(function() {
         });
 
         PushNotifications.addListener('pushNotificationReceived', function(notification) {
-            console.log('[Push] Foreground notification received:', notification.title);
-
-            // Foreground mein notification manually show karo
-            // Simple in-app toast/banner
-            showInAppNotification(notification.title, notification.body || '');
+            console.log('[Push] Received:', notification.title);
         });
 
         PushNotifications.addListener('pushNotificationActionPerformed', function(action) {
@@ -681,74 +672,10 @@ setTimeout(function() {
         console.log('[Push] Initialized');
     }
 
-    // capacitorPluginsReady ke baad hi call karo
-    // PushNotifications plugin tab available hota hai
     if (window.__capacitorReady) {
-        setTimeout(initPushNotifications, 1000);
+        initPushNotifications();
     } else {
-        window.addEventListener('capacitorPluginsReady', function() {
-            setTimeout(initPushNotifications, 1000);
-        });
-        // Hard fallback
-        setTimeout(initPushNotifications, 6000);
+        window.addEventListener('capacitorPluginsReady', initPushNotifications);
+        setTimeout(initPushNotifications, 3000);
     }
 })();
-
-
-/* ── In-App Notification Banner (foreground) ─── */
-function showInAppNotification(title, body) {
-    // Pehle se existing banner hata do
-    var old = document.getElementById('_pushBanner');
-    if (old) old.remove();
-
-    var banner = document.createElement('div');
-    banner.id = '_pushBanner';
-    banner.style.cssText = [
-        'position:fixed',
-        'top:' + (document.getElementById('gamebar-wrap') ?
-            (document.getElementById('gamebar-wrap').getBoundingClientRect().bottom + 8) + 'px' : '80px'),
-        'left:12px',
-        'right:12px',
-        'z-index:999999',
-        'background:#1e293b',
-        'border:1px solid #6366f1',
-        'border-radius:14px',
-        'padding:14px 16px',
-        'box-shadow:0 8px 30px rgba(0,0,0,0.5)',
-        'cursor:pointer',
-        'animation:slideDown .3s ease'
-    ].join(';');
-
-    banner.innerHTML =
-        '<div style="display:flex;align-items:flex-start;gap:10px">' +
-        '<span style="font-size:20px">🔔</span>' +
-        '<div style="flex:1">' +
-        '<div style="font-weight:700;color:#f1f5f9;font-size:14px;margin-bottom:3px">' + (title || '') + '</div>' +
-        '<div style="color:#94a3b8;font-size:13px">' + (body || '') + '</div>' +
-        '</div>' +
-        '<button onclick="this.closest('#_pushBanner').remove()" ' +
-        'style="background:none;border:none;color:#475569;font-size:18px;cursor:pointer;padding:0;line-height:1">×</button>' +
-        '</div>';
-
-    // CSS animation
-    if (!document.getElementById('_pushBannerStyle')) {
-        var style = document.createElement('style');
-        style.id = '_pushBannerStyle';
-        style.textContent = '@keyframes slideDown{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}';
-        document.head.appendChild(style);
-    }
-
-    document.body.appendChild(banner);
-
-    // 5 second baad auto hide
-    setTimeout(function() {
-        if (banner.parentNode) {
-            banner.style.opacity = '0';
-            banner.style.transition = 'opacity .3s';
-            setTimeout(function() { if (banner.parentNode) banner.remove(); }, 300);
-        }
-    }, 5000);
-
-    // Click pe dismiss
-    banner.addEventListener('click', function() { banner.remove(); });
-}
