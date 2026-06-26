@@ -627,14 +627,19 @@ setTimeout(function() {
     }
 
     function initPushNotifications() {
-        var PushNotifications = window.Capacitor &&
-                                window.Capacitor.Plugins &&
-                                window.Capacitor.Plugins.PushNotifications;
+        // window.CapPush — index.html mein Capacitor bridge se assigned
+        // Fallback: directly Capacitor.Plugins se bhi try karo
+        var PushNotifications = window.CapPush ||
+                                (window.Capacitor &&
+                                 window.Capacitor.Plugins &&
+                                 window.Capacitor.Plugins.PushNotifications);
 
         if (!PushNotifications) {
-            console.warn('[Push] Plugin nahi mila');
+            console.warn('[Push] PushNotifications plugin nahi mila — CapPush:', !!window.CapPush);
             return;
         }
+
+        console.log('[Push] Plugin found, initializing...');
 
         PushNotifications.checkPermissions().then(function(result) {
             if (result.receive === 'granted') {
