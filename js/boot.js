@@ -676,16 +676,16 @@ setTimeout(function() {
         console.log('[Push] Initialized');
     }
 
-    function delayedPushInit() {
-        // 2 second wait — Capacitor bridge fully ready hone do
-        setTimeout(initPushNotifications, 2000);
-    }
-
+    // capacitorPluginsReady ke baad hi call karo
+    // PushNotifications plugin tab available hota hai
     if (window.__capacitorReady) {
-        delayedPushInit();
+        setTimeout(initPushNotifications, 1000);
     } else {
-        window.addEventListener('capacitorPluginsReady', delayedPushInit);
-        setTimeout(initPushNotifications, 5000); // extra fallback
+        window.addEventListener('capacitorPluginsReady', function() {
+            setTimeout(initPushNotifications, 1000);
+        });
+        // Hard fallback
+        setTimeout(initPushNotifications, 6000);
     }
 })();
 
