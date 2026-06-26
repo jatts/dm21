@@ -153,6 +153,15 @@
                     window.CapApp = null;
                 }
 
+                // PushNotifications — @capacitor/push-notifications
+                if (Plugins.PushNotifications) {
+                    window.CapPush = Plugins.PushNotifications;
+                    console.log('[Capacitor] PushNotifications plugin assigned ✅');
+                } else {
+                    console.warn('[Capacitor] Plugins.PushNotifications nahi mila. Keys:', Object.keys(Plugins).join(', '));
+                    window.CapPush = null;
+                }
+
                 window.__capacitorReady = true;
                 window.dispatchEvent(new Event('capacitorPluginsReady'));
             }
@@ -1072,6 +1081,24 @@ function osDebugRefresh() {
     osDebugLog('OneSignal Player ID: ' + (playerId ? '✅ ' + playerId.substring(0,12)+'...' : '❌ NOT registered yet'),
         playerId ? '#4ade80' : '#f87171');
 
+    // Permission status
+    if (Push) {
+        Push.checkPermissions().then(function(r) {
+            osDebugLog('Push permission: ' + r.receive,
+                r.receive === 'granted' ? '#4ade80' : '#f87171');
+        }).catch(function(e) {
+            osDebugLog('Permission check error: ' + e.message, '#f87171');
+        });
+    }
+
+    // AdMob status
+    osDebugLog('--- AdMob ---', '#a78bfa');
+    var AdMob = window.CapAdMob;
+    osDebugLog('AdMob plugin: ' + (AdMob ? '✅ Found' : '❌ NOT FOUND'),
+        AdMob ? '#4ade80' : '#f87171');
+    osDebugLog('AdMob initPromise: ' + (window.__admobInitPromise ? '✅ exists' : '❌ null'),
+        window.__admobInitPromise ? '#4ade80' : '#f87171');
+
     // 5. Platform check
     var platform = window.Capacitor ? window.Capacitor.getPlatform() : 'web';
     osDebugLog('Platform: ' + platform,
@@ -1182,21 +1209,26 @@ function osDebugRequestPermission() {
     osDebugLog('Permission request kar raha hoon...', '#fbbf24');
     try {
         var Push = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.PushNotifications;
-        if (Push) {
-            Push.requestPermissions().then(function(res) {
-                osDebugLog('Permission: ' + res.receive,
-                    res.receive === 'granted' ? '#4ade80' : '#f87171');
-                if (res.receive === 'granted') {
-                    Push.register();
-                    osDebugLog('Registering for FCM...', '#fbbf24');
-                    setTimeout(osDebugRefresh, 3000);
-                }
-            }).catch(function(e) {
-                osDebugLog('Error: ' + e.message, '#f87171');
-            });
-        } else {
-            osDebugLog('❌ PushNotifications plugin nahi mila — nayi APK chahiye', '#f87171');
+        if (!Push) {
+            osDebugLog('❌ PushNotifications plugin nahi mila', '#f87171');
+            return;
         }
+        osDebugLog('Permission request kar raha hoon...', '#fbbf24');
+        Push.requestPermissions().then(function(res) {
+            osDebugLog('Permission result: ' + res.receive,
+                res.receive === 'granted' ? '#4ade80' : '#f87171');
+            if (res.receive === 'granted') {
+                osDebugLog('FCM register kar raha hoon...', '#fbbf24');
+                Push.register().then(function() {
+                    osDebugLog('Register called ✅', '#4ade80');
+                }).catch(function(e) {
+                    osDebugLog('Register error: ' + e.message, '#f87171');
+                });
+                setTimeout(osDebugRefresh, 4000);
+            }
+        }).catch(function(e) {
+            osDebugLog('requestPermissions error: ' + e.message, '#f87171');
+        });
     } catch(e) {
         osDebugLog('Exception: ' + e.message, '#f87171');
     }
