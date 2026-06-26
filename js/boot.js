@@ -364,7 +364,7 @@ if (_apCard) {
             // matlab scanHistory[0] hi woh entry hai jo is card se match karti hai.
             // (lastLookupBarcode use nahi karte kyunki woh sirf barcode string
             // hai, index nahi — agar same barcode kisi wajah se 2 baar history
-            // mein ho to confusion ho sakti hai)
+            // mein ho to confusion ho sakta hai)
             if (typeof scanHistory !== 'undefined' && scanHistory.length > 0 && scanHistory[0].discDisplay === 'N/A') {
                 openPriceCalc(calcPct, calcArticle, scanHistory[0].Barcode, 0);
             } else {
@@ -552,119 +552,130 @@ setTimeout(function() {
 
 
 /* ═══════════════════════════════════════
-   PUSH NOTIFICATIONS via @capacitor/push-notifications
-   + OneSignal REST API registration
-   SAFE — try/catch har step mein
+   PUSH NOTIFICATIONS
+   @capacitor/push-notifications + OneSignal REST API
 ═══════════════════════════════════════ */
 (function() {
-  try {
-    // Check if Capacitor is available and native
-    if (!window.Capacitor || !window.Capacitor.isNativePlatform()) {
-      console.log('[Push] Browser mode — push notifications not available');
-      return;
+    var ONESIGNAL_APP_ID = 'f9e441e6-0852-4f55-82b4-066379edc977';
+
+    function getEmployeeName() {
+        try {
+            var raw = localStorage.getItem('dmSession');
+            if (raw) {
+                var s = JSON.parse(raw);
+                return s.name || s.playerId || '';
+            }
+        } catch(e) {}
+        return '';
     }
 
-    // Get plugin from Capacitor
-    const PushNotifications = window.Capacitor.Plugins?.PushNotifications;
-    if (!PushNotifications) {
-      console.warn('[Push] PushNotifications plugin not available. Is @capacitor/push-notifications installed?');
-      return;
-    }
-
-    const ONESIGNAL_APP_ID = 'f9e441e6-0852-4f55-82b4-066379edc977';
-
+    // OneSignal /players endpoint — API key nahi chahiye registration ke liye
     async function registerWithOneSignal(fcmToken) {
-      try {
-        const session = JSON.parse(localStorage.getItem('dmSession') || '{}');
-        const playerId = session.playerId || '222';
-        const name = session.name || 'jamil';
+        if (!fcmToken) return;
+        console.log('[Push] Registering with OneSignal...');
 
-        const payload = {
-          app_id: ONESIGNAL_APP_ID,
-          identifier: fcmToken,
-          device_type: 2,
-          tags: {
-            employee_name: name,
-            player_id: playerId,
-            app_version: '2.1'
-          },
-          external_user_id: playerId
+        var employeeName = getEmployeeName();
+
+        var payload = {
+            app_id: ONESIGNAL_APP_ID,
+            device_type: 1,
+            identifier: fcmToken,
+            tags: {
+                employee_name: employeeName || 'unknown',
+                app_version: '2.1'
+            }
         };
 
-        const response = await fetch('https://onesignal.com/api/v1/players', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-
-        if (response.ok) {
-          const result = await response.json();
-          console.log('✅ OneSignal registered:', result);
-          localStorage.setItem('fcmToken', fcmToken);
-        } else {
-          const text = await response.text();
-          console.error('❌ OneSignal registration failed:', response.status, text);
+        try {
+            var res = await fetch('https://onesignal.com/api/v1/players', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            var data = await res.json();
+            if (data.id) {
+                console.log('[Push] Registered! Player ID:', data.id);
+                localStorage.setItem('os_player_id', data.id);
+                if (!employeeName) setTimeout(updateEmployeeTag, 3000);
+            } else {
+                console.warn('[Push] Registration failed:', JSON.stringify(data));
+            }
+        } catch(e) {
+            console.warn('[Push] Register error:', e);
         }
-      } catch (e) {
-        console.error('❌ REST API error:', e);
-        // Don't crash
-      }
     }
 
-    async function initPush() {
-      try {
-        // 1. Check permission
-        let perm = await PushNotifications.checkPermissions();
-        if (perm.receive !== 'granted') {
-          perm = await PushNotifications.requestPermissions();
-          if (perm.receive !== 'granted') {
-            console.warn('[Push] Permission denied');
+    async function updateEmployeeTag() {
+        var playerId = localStorage.getItem('os_player_id');
+        if (!playerId) return;
+        var name = getEmployeeName();
+        if (!name) { setTimeout(updateEmployeeTag, 3000); return; }
+
+        try {
+            await fetch('https://onesignal.com/api/v1/players/' + playerId, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    app_id: ONESIGNAL_APP_ID,
+                    tags: { employee_name: name, app_version: '2.1' }
+                })
+            });
+            console.log('[Push] Tag updated:', name);
+        } catch(e) {
+            console.warn('[Push] Tag error:', e);
+        }
+    }
+
+    function initPushNotifications() {
+        var PushNotifications = window.Capacitor &&
+                                window.Capacitor.Plugins &&
+                                window.Capacitor.Plugins.PushNotifications;
+
+        if (!PushNotifications) {
+            console.warn('[Push] Plugin nahi mila');
             return;
-          }
         }
 
-        // 2. Register with FCM
-        await PushNotifications.register();
-
-        // 3. Listen for FCM token
-        PushNotifications.addListener('registration', async (token) => {
-          console.log('✅ FCM Token:', token.value);
-          await registerWithOneSignal(token.value);
+        PushNotifications.checkPermissions().then(function(result) {
+            if (result.receive === 'granted') {
+                PushNotifications.register();
+            } else if (result.receive !== 'denied') {
+                PushNotifications.requestPermissions().then(function(res) {
+                    if (res.receive === 'granted') PushNotifications.register();
+                });
+            }
+        }).catch(function(e) {
+            console.warn('[Push] Permission error:', e);
         });
 
-        // 4. Handle incoming notifications
-        PushNotifications.addListener('pushNotificationReceived', (notif) => {
-          console.log('📱 Notification received:', notif);
-          if (window.showToast) {
-            window.showToast(notif.title + ': ' + notif.body, 'info', 3000);
-          }
+        PushNotifications.addListener('registration', function(token) {
+            console.log('[Push] FCM Token received');
+            localStorage.setItem('fcm_token', token.value);
+            registerWithOneSignal(token.value);
         });
 
-        PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
-          console.log('📱 Notification clicked:', action);
+        PushNotifications.addListener('registrationError', function(error) {
+            console.warn('[Push] Registration error:', JSON.stringify(error));
         });
 
-        // 5. Re-register if token already stored
-        const storedToken = localStorage.getItem('fcmToken');
-        if (storedToken) {
-          await registerWithOneSignal(storedToken);
-        }
+        PushNotifications.addListener('pushNotificationReceived', function(notification) {
+            console.log('[Push] Received:', notification.title);
+        });
 
-        console.log('[Push] Initialization complete');
-      } catch (e) {
-        console.error('[Push] Init error:', e);
-        // Don't crash — just log
-      }
+        PushNotifications.addListener('pushNotificationActionPerformed', function(action) {
+            console.log('[Push] Tapped:', action.notification.title);
+            if (action.notification.data && action.notification.data.url) {
+                window.open(action.notification.data.url, '_blank');
+            }
+        });
+
+        console.log('[Push] Initialized');
     }
 
-    // Run when Capacitor is ready
     if (window.__capacitorReady) {
-      initPush();
+        initPushNotifications();
     } else {
-      window.addEventListener('capacitorPluginsReady', initPush);
+        window.addEventListener('capacitorPluginsReady', initPushNotifications);
+        setTimeout(initPushNotifications, 3000);
     }
-  } catch (globalError) {
-    console.error('[Push] Fatal error:', globalError);
-    // Never crash the app
-  }
 })();
