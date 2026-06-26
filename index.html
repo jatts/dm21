@@ -113,7 +113,7 @@
                 // baad hi try hota hai (silently fail nahi hota).
                 if (Plugins.AdMob) {
                     window.CapAdMob = Plugins.AdMob;
-                    window.__admobInitPromise = window.CapAdMob.initialize({ initializeForTesting: false })
+                    window.__admobInitPromise = window.CapAdMob.initialize({ initializeForTesting: true })
                         .then(function() {
                             console.log('[Capacitor] AdMob initialize() completed successfully');
                             return true;
