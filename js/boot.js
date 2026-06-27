@@ -379,8 +379,18 @@ setTimeout(function() { if (typeof gsGetSession === 'function' && gsGetSession()
         });
 
         Push.addListener('pushNotificationReceived', function(notification) {
-            console.log('[Push] Foreground notification:', notification.title);
-            showPushBanner(notification.title, notification.body || '');
+            console.log('[Push] Full notification object:', JSON.stringify(notification));
+            // OneSignal notification structure different ho sakta hai
+            var title = notification.title || 
+                        (notification.notification && notification.notification.title) || 
+                        '';
+            var body  = notification.body  || 
+                        notification.message ||
+                        (notification.notification && notification.notification.body) ||
+                        (notification.data && notification.data.message) ||
+                        '';
+            console.log('[Push] Title:', title, 'Body:', body);
+            showPushBanner(title, body);
         });
 
         Push.addListener('pushNotificationActionPerformed', function(action) {
