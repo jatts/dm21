@@ -328,8 +328,10 @@ setTimeout(function() { if (typeof gsGetSession === 'function' && gsGetSession()
         banner.style.cssText = 'position:fixed;top:' + topPos + 'px;left:12px;right:12px;z-index:999999;background:#1e293b;border:1px solid #6366f1;border-radius:14px;padding:14px 16px;box-shadow:0 8px 30px rgba(0,0,0,0.5);cursor:pointer';
         banner.innerHTML = '<div style="display:flex;align-items:flex-start;gap:10px"><span style="font-size:20px">🔔</span><div style="flex:1"><div style="font-weight:700;color:#f1f5f9;font-size:14px;margin-bottom:3px">' + (title||'') + '</div><div style="color:#94a3b8;font-size:13px">' + (body||'') + '</div></div><button onclick="document.getElementById(\'_pushBanner\').remove()" style="background:none;border:none;color:#475569;font-size:18px;cursor:pointer;padding:0">×</button></div>';
         document.body.appendChild(banner);
-        setTimeout(function() { if (banner.parentNode) banner.remove(); }, 6000);
-        banner.onclick = function() { banner.remove(); };
+        // Auto close nahi — user khud X se band karega
+        banner.onclick = function(e) {
+            if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
+        };
     }
 
     function initPushNotifications() {
@@ -379,18 +381,9 @@ setTimeout(function() { if (typeof gsGetSession === 'function' && gsGetSession()
         });
 
         Push.addListener('pushNotificationReceived', function(notification) {
-            console.log('[Push] Full notification object:', JSON.stringify(notification));
-            // OneSignal notification structure different ho sakta hai
-            var title = notification.title || 
-                        (notification.notification && notification.notification.title) || 
-                        '';
-            var body  = notification.body  || 
-                        notification.message ||
-                        (notification.notification && notification.notification.body) ||
-                        (notification.data && notification.data.message) ||
-                        '';
-            console.log('[Push] Title:', title, 'Body:', body);
-            showPushBanner(title, body);
+            // Foreground mein notification silently receive karo
+            // Background/status bar notification system handle karta hai
+            console.log('[Push] Notification received (foreground):', notification.title);
         });
 
         Push.addListener('pushNotificationActionPerformed', function(action) {
