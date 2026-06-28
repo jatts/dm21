@@ -266,72 +266,67 @@ setTimeout(function() { if (typeof gsGetSession === 'function' && gsGetSession()
 
 /* ═══════════════════════════════════════
    PUSH NOTIFICATIONS
-   @capacitor/push-notifications + OneSignal REST API
+   @capacitor/push-notifications + GAS + FCM
+   No OneSignal — Direct FCM via Google Apps Script
 ═══════════════════════════════════════ */
 (function() {
-    var ONESIGNAL_APP_ID = 'f9e441e6-0852-4f55-82b4-066379edc977';
+    var GAS_URL = 'https://script.google.com/macros/s/AKfycbze6w6Qfm4J6dpN3Ah4UbvkOoRXbzym4hpk4x5NQg49nC0QRi4cQqSwKlgbb0gXs2JuBg/exec';
 
     function getEmployeeName() {
         try {
             var raw = localStorage.getItem('dmSession');
-            if (raw) { var s = JSON.parse(raw); return s.name || s.playerId || ''; }
+            if (raw) {
+                var s = JSON.parse(raw);
+                return s.name || s.playerId || '';
+            }
         } catch(e) {}
         return '';
     }
 
-    async function registerWithOneSignal(fcmToken) {
+    // FCM token GAS pe register karo
+    async function registerToken(fcmToken) {
         if (!fcmToken) return;
         var employeeName = getEmployeeName();
-        var payload = {
-            app_id: ONESIGNAL_APP_ID,
-            device_type: 1,
-            identifier: fcmToken,
-            tags: { employee_name: employeeName || 'unknown', app_version: '2.1' }
-        };
+        console.log('[Push] Registering token with GAS, employee:', employeeName);
+        
         try {
-            var res = await fetch('https://onesignal.com/api/v1/players', {
+            var res = await fetch(GAS_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                body: JSON.stringify({
+                    action: 'register',
+                    token: fcmToken,
+                    employee: employeeName || 'unknown'
+                })
             });
             var data = await res.json();
-            if (data.id) {
-                console.log('[Push] Registered! Player ID:', data.id);
-                localStorage.setItem('os_player_id', data.id);
-                if (!employeeName) setTimeout(updateEmployeeTag, 3000);
+            if (data.success) {
+                console.log('[Push] Token registered ✅');
+                localStorage.setItem('fcm_token', fcmToken);
+            } else {
+                console.warn('[Push] Register failed:', data);
             }
-        } catch(e) { console.warn('[Push] Register error:', e); }
+        } catch(e) {
+            console.warn('[Push] Register error:', e);
+        }
     }
 
-    async function updateEmployeeTag() {
-        var playerId = localStorage.getItem('os_player_id');
-        if (!playerId) return;
+    // Employee tag update karo baad mein
+    function tryUpdateEmployee() {
+        var token = localStorage.getItem('fcm_token');
+        if (!token) return;
         var name = getEmployeeName();
-        if (!name) { setTimeout(updateEmployeeTag, 3000); return; }
-        try {
-            await fetch('https://onesignal.com/api/v1/players/' + playerId, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ app_id: ONESIGNAL_APP_ID, tags: { employee_name: name, app_version: '2.1' } })
-            });
-        } catch(e) { console.warn('[Push] Tag error:', e); }
-    }
-
-    // In-app notification banner (foreground)
-    function showPushBanner(title, body) {
-        var old = document.getElementById('_pushBanner');
-        if (old) old.remove();
-        var banner = document.createElement('div');
-        banner.id = '_pushBanner';
-        var gb = document.getElementById('gamebar-wrap');
-        var topPos = gb ? (gb.getBoundingClientRect().bottom + 8) : 80;
-        banner.style.cssText = 'position:fixed;top:' + topPos + 'px;left:12px;right:12px;z-index:999999;background:#1e293b;border:1px solid #6366f1;border-radius:14px;padding:14px 16px;box-shadow:0 8px 30px rgba(0,0,0,0.5);cursor:pointer';
-        banner.innerHTML = '<div style="display:flex;align-items:flex-start;gap:10px"><span style="font-size:20px">🔔</span><div style="flex:1"><div style="font-weight:700;color:#f1f5f9;font-size:14px;margin-bottom:3px">' + (title||'') + '</div><div style="color:#94a3b8;font-size:13px">' + (body||'') + '</div></div><button onclick="document.getElementById(\'_pushBanner\').remove()" style="background:none;border:none;color:#475569;font-size:18px;cursor:pointer;padding:0">×</button></div>';
-        document.body.appendChild(banner);
-        // Auto close nahi — user khud X se band karega
-        banner.onclick = function(e) {
-            if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
-        };
+        if (!name) { setTimeout(tryUpdateEmployee, 3000); return; }
+        
+        fetch(GAS_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'register', token: token, employee: name })
+        }).then(function() {
+            console.log('[Push] Employee updated:', name);
+        }).catch(function(e) {
+            console.warn('[Push] Employee update error:', e);
+        });
     }
 
     function initPushNotifications() {
@@ -340,27 +335,25 @@ setTimeout(function() { if (typeof gsGetSession === 'function' && gsGetSession()
 
         if (!Push) { console.warn('[Push] Plugin nahi mila'); return; }
 
-        // Android 8+ ke liye notification channel create karo
-        // Documentation: createChannel() zaroori hai warna fallback channel use hoga
+        // Android notification channel create karo
         if (Push.createChannel) {
             Push.createChannel({
                 id: 'fcm_fallback_notification_channel',
                 name: 'General Notifications',
-                description: 'Default notification channel',
-                importance: 5, // IMPORTANCE_HIGH
-                visibility: 1, // VISIBILITY_PUBLIC
+                importance: 5,
+                visibility: 1,
                 sound: 'default',
                 vibration: true,
                 lights: true
             }).then(function() {
                 console.log('[Push] Channel created ✅');
             }).catch(function(e) {
-                console.warn('[Push] Channel create error:', e);
+                console.warn('[Push] Channel error:', e);
             });
         }
 
         Push.checkPermissions().then(function(result) {
-            console.log('[Push] Permission status:', result.receive);
+            console.log('[Push] Permission:', result.receive);
             if (result.receive === 'granted') {
                 Push.register();
             } else if (result.receive !== 'denied') {
@@ -372,8 +365,9 @@ setTimeout(function() { if (typeof gsGetSession === 'function' && gsGetSession()
 
         Push.addListener('registration', function(token) {
             console.log('[Push] FCM Token received ✅');
-            localStorage.setItem('fcm_token', token.value);
-            registerWithOneSignal(token.value);
+            registerToken(token.value);
+            // Employee name baad mein set hogi — 3s baad update
+            setTimeout(tryUpdateEmployee, 3000);
         });
 
         Push.addListener('registrationError', function(error) {
@@ -381,9 +375,8 @@ setTimeout(function() { if (typeof gsGetSession === 'function' && gsGetSession()
         });
 
         Push.addListener('pushNotificationReceived', function(notification) {
-            // Foreground mein notification silently receive karo
-            // Background/status bar notification system handle karta hai
-            console.log('[Push] Notification received (foreground):', notification.title);
+            console.log('[Push] Foreground notification:', notification.title);
+            // Foreground mein system notification show karo
         });
 
         Push.addListener('pushNotificationActionPerformed', function(action) {
@@ -393,7 +386,7 @@ setTimeout(function() { if (typeof gsGetSession === 'function' && gsGetSession()
             }
         });
 
-        console.log('[Push] Initialized ✅');
+        console.log('[Push] Initialized ✅ (GAS + FCM)');
     }
 
     if (window.__capacitorReady) {
