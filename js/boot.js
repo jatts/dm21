@@ -270,7 +270,7 @@ setTimeout(function() { if (typeof gsGetSession === 'function' && gsGetSession()
    No OneSignal — Direct FCM via Google Apps Script
 ═══════════════════════════════════════ */
 (function() {
-    var GAS_URL = 'https://script.google.com/macros/s/AKfycbze6w6Qfm4J6dpN3Ah4UbvkOoRXbzym4hpk4x5NQg49nC0QRi4cQqSwKlgbb0gXs2JuBg/exec';
+    var GAS_URL = 'https://script.google.com/macros/s/AKfycbyuL5H5e9ndHXiEx0CHC3un2rNjlC9wQ0DRT00Wkm8sny7P5wP4pMZeu360Qo9MpR_b8Q/exec';
 
     function getEmployeeName() {
         try {
@@ -292,12 +292,13 @@ setTimeout(function() { if (typeof gsGetSession === 'function' && gsGetSession()
         try {
             var res = await fetch(GAS_URL, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'text/plain' },
                 body: JSON.stringify({
                     action: 'register',
                     token: fcmToken,
                     employee: employeeName || 'unknown'
-                })
+                }),
+                redirect: 'follow'
             });
             var data = await res.json();
             if (data.success) {
@@ -320,8 +321,9 @@ setTimeout(function() { if (typeof gsGetSession === 'function' && gsGetSession()
         
         fetch(GAS_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'register', token: token, employee: name })
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify({ action: 'register', token: token, employee: name }),
+            redirect: 'follow'
         }).then(function() {
             console.log('[Push] Employee updated:', name);
         }).catch(function(e) {
