@@ -21,8 +21,11 @@ function parseDbVer(verStr) {
     return parseInt(parts[0]) || 0;
 }
 function extractVerFromName(filename) {
-    // dm.al.44.1.zip or dm.j.44.1.zip → "44.1"
-    const m = filename.match(/dm\.[aj][l]?\.([\d]+\.[\d]+)/i);
+    // Naya GitHub naming system:
+    //   JDot     → dm.j.01.1.zip        (01.1, 01.2 ... 01.10, phir 02.1)
+    //   Almirah  → dm.almirah.01.1.zip  (same pattern)
+    // dm.j.01.1.zip or dm.almirah.01.1.zip → "01.1"
+    const m = filename.match(/dm\.(?:j|almirah)\.(\d+\.\d+)/i);
     return m ? m[1] : null;
 }
 
@@ -348,6 +351,61 @@ async function downloadAndInstall(info, session, brandFolder, cachedVer) {
 }
 
 /* ══════════════════════════════════════════════════════
+   BACKGROUND POLLING — app khuli hi rahe tab bhi
+   har 8 second baad GitHub/GAS se naya version check
+   karta hai. Agar naya version mile to forced update
+   banner dikha deta hai (auto-download nahi karta).
+══════════════════════════════════════════════════════ */
+const DB_POLL_INTERVAL_MS = 8000; // 8 sec (5-10s range)
+let _dbPollTimer = null;
+
+function startDbVersionPolling(session, brandFolder) {
+    // Pehle se chal raha hai to dobara start na karo
+    if (_dbPollTimer) return;
+
+    _dbPollTimer = setInterval(async function () {
+        try {
+            // Skip agar: download/install already chal raha hai,
+            // banner already dikh raha hai, ya internet nahi hai
+            if (window._dbInitRunning) return;
+            if (document.getElementById('dbUpdateBanner')) return;
+            if (!navigator.onLine) return;
+
+            const gasInfo   = await gasGetDbInfo(session, brandFolder);
+            const latestVer = gasInfo.version;
+            const activeVer = window.DB_STATE.activeVersion;
+
+            if (activeVer === '?' || !latestVer) return;
+
+            if (parseDbVer(latestVer) > parseDbVer(activeVer)) {
+                console.log('[DB] Background poll: naya version mila v' + latestVer);
+                showUpdateBanner(activeVer, latestVer, async function () {
+                    const ld = document.getElementById('loading');
+                    if (ld) { ld.style.display = 'flex'; ld.classList.remove('fade'); }
+                    ldMsg('Update download ho rahi hai...');
+                    ldSub(''); ldPct(0);
+                    try {
+                        await downloadAndInstall(gasInfo, session, brandFolder, activeVer);
+                        settingsDbUpdate();
+                        hideLoading();
+                        if (typeof showToast === 'function') showToast('✅ DB v' + latestVer + ' update ho gayi!', 'success', 3000);
+                    } catch (e) {
+                        showBlockScreen('Update fail: ' + e.message);
+                    }
+                });
+            }
+        } catch (e) {
+            // Background check chup chaap fail ho — user ko disturb mat karo
+            console.warn('[DB] Background version poll fail:', e.message);
+        }
+    }, DB_POLL_INTERVAL_MS);
+}
+
+function stopDbVersionPolling() {
+    if (_dbPollTimer) { clearInterval(_dbPollTimer); _dbPollTimer = null; }
+}
+
+/* ══════════════════════════════════════════════════════
    MAIN: initDatabase()
    Called from boot.js AFTER login (session must exist)
 ══════════════════════════════════════════════════════ */
@@ -462,6 +520,7 @@ async function initDatabase() {
                 settingsDbUpdate();
                 hideLoading();
                 console.log('✅ DB v' + latestVer + ' loaded from cache');
+                startDbVersionPolling(session, brandFolder);
                 return;
             }
         } catch (e) {
@@ -482,6 +541,7 @@ async function initDatabase() {
             settingsDbUpdate();
             hideLoading();
             if (typeof showToast === 'function') showToast('Database ready! v' + latestVer, 'success', 3000);
+            startDbVersionPolling(session, brandFolder);
         } catch (e) {
             showBlockScreen('Download fail: ' + e.message);
         }
@@ -497,6 +557,7 @@ async function initDatabase() {
                 settingsDbUpdate();
                 hideLoading();
                 if (typeof showToast === 'function') showToast('✅ DB v' + latestVer + ' update ho gayi!', 'success', 3000);
+                startDbVersionPolling(session, brandFolder);
             } catch (e) {
                 showBlockScreen('Update fail: ' + e.message);
             }
