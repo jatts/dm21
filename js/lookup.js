@@ -77,8 +77,24 @@ function lookupBarcode(rawInput, searchMode) {
         if (calcHint2) calcHint2.style.display = 'none';
         if (apCard2)   apCard2.style.cursor = 'default';
 
-        // IMPORTANT: Scanner loop rok do - not found pe bhi scanner close karo
-        if (typeof closeScanner === 'function') closeScanner();
+        // Scanner loop ka agla step: agar Continuous mode ON hai to "found"
+        // wale case ki tarah hi camera band karke countdown dikhao aur
+        // khatam hone par dobara scan shuru karo. OFF hai to pehle jaisa
+        // poora scanner close kar do.
+        if (typeof isContinuous === 'function' && isContinuous()) {
+            if (typeof stopCamera === 'function') stopCamera();
+            if (typeof showCountdown === 'function') {
+                var _delaySec = (typeof getDelaySec === 'function') ? getDelaySec() : 3;
+                showCountdown(_delaySec, function () {
+                    var box = document.getElementById('scannerBox');
+                    if (box && box.classList.contains('open') && typeof openScanner === 'function') {
+                        openScanner(); // camera fresh restart
+                    }
+                });
+            }
+        } else if (typeof closeScanner === 'function') {
+            closeScanner();
+        }
 
         // History mein not-found bhi add karo (optional - agar chahiye)
         // Abhi skip karte hain
