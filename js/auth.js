@@ -5,6 +5,7 @@
 var GS_SCRIPT_URL  = 'https://script.google.com/macros/s/AKfycbwyQEWiUnPu_c3ZSuYPyTIxLi80E-LVuI-YUUYeppq6RqbNjV3KQwWpTxdoP1_ATu9q/exec';
 var GS_SESSION_KEY = 'dmSession';
 
+
 function gsGetSession() {
     try {
         var s = AppDB.getJSON(GS_SESSION_KEY, null);
