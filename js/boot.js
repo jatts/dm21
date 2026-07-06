@@ -92,8 +92,8 @@ function _onRewardEarned() {
     if (window.gameBar) window.gameBar.refillCoins();
 }
 
-var AD_UNIT_REWARDED = 'ca-app-pub-3940256099942544/5224354917';
-var AD_UNIT_BANNER    = 'ca-app-pub-3940256099942544/6300978111';
+var AD_UNIT_REWARDED = 'ca-app-pub-7552701723113766/4906406967';
+var AD_UNIT_BANNER    = 'ca-app-pub-7552701723113766/1638079940';
 var _rewardListenersAttached = false;
 
 function _setupAdMobListeners() {
@@ -121,7 +121,7 @@ window.showRewardedAd = async function() {
     _setupAdMobListeners();
     try {
         showToast && showToast('Ad load ho rahi hai...', 'info', 1500);
-        await window.CapAdMob.prepareRewardVideoAd({ adId: AD_UNIT_REWARDED, isTesting: true });
+        await window.CapAdMob.prepareRewardVideoAd({ adId: AD_UNIT_REWARDED });
         await window.CapAdMob.showRewardVideoAd();
     } catch(e) {
         console.warn('[AdMob] Rewarded ad failed:', e);
@@ -156,7 +156,7 @@ window.showAdBanner = async function() {
         if (_bannerLoadedOnce && typeof window.CapAdMob.resumeBanner === 'function') {
             await window.CapAdMob.resumeBanner();
         } else {
-            await window.CapAdMob.showBanner({ adId: AD_UNIT_BANNER, adSize: 'BANNER', position: 'TOP_CENTER', margin: topMargin, isTesting: true });
+            await window.CapAdMob.showBanner({ adId: AD_UNIT_BANNER, adSize: 'BANNER', position: 'TOP_CENTER', margin: topMargin });
             _bannerLoadedOnce = true;
         }
         if (typeof window._applyBannerPaddingToGamebar === 'function') window._applyBannerPaddingToGamebar(60);
@@ -165,7 +165,7 @@ window.showAdBanner = async function() {
         if (_bannerLoadedOnce) {
             try {
                 topMargin = getBannerTopMargin();
-                await window.CapAdMob.showBanner({ adId: AD_UNIT_BANNER, adSize: 'BANNER', position: 'TOP_CENTER', margin: topMargin, isTesting: true });
+                await window.CapAdMob.showBanner({ adId: AD_UNIT_BANNER, adSize: 'BANNER', position: 'TOP_CENTER', margin: topMargin });
             } catch(e2) { console.warn('[AdMob] Fallback failed:', e2); }
         }
     }
