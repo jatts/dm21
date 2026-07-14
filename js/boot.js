@@ -92,8 +92,8 @@ function _onRewardEarned() {
     if (window.gameBar) window.gameBar.refillCoins();
 }
 
-var AD_UNIT_REWARDED = 'ca-app-pub-7552701723113766/4906406967';
-var AD_UNIT_BANNER    = 'ca-app-pub-7552701723113766/1638079940';
+var AD_UNIT_REWARDED = 'ca-app-pub-7552701723113766/4348232675';
+var AD_UNIT_BANNER    = 'ca-app-pub-7552701723113766/2886802185';
 var _rewardListenersAttached = false;
 
 function _setupAdMobListeners() {
