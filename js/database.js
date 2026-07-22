@@ -249,12 +249,15 @@ async function gasCall(session, brandFolder, mode) {
         mode      : mode || 'info',
     });
     const gasUrl = (typeof GS_SCRIPT_URL !== 'undefined') ? GS_SCRIPT_URL : null;
-    if (!gasUrl) throw new Error('Server URL missing — auth.js load order check karo');
+    if (!gasUrl) throw new Error('GAS URL missing — auth.js load order check karo');
     const url  = gasUrl + '?' + params.toString();
     const resp = await fetch(url, { cache: 'no-store' });
-    if (!resp.ok) throw new Error('Server response: ' + resp.status);
+    if (!resp.ok) throw new Error('GAS response: ' + resp.status);
     const data = await resp.json();
-    if (!data.success) throw new Error(data.message || 'Server error');
+    // TEMP DEBUG — issue trace ke baad hata dena
+    console.log('[DEBUG gasCall] mode=' + mode + ' url=' + url);
+    console.log('[DEBUG gasCall] response=', JSON.stringify(data).slice(0, 500));
+    if (!data.success) throw new Error(data.message || 'GAS error');
     return data;
 }
 
@@ -274,7 +277,7 @@ async function downloadViaGas(session, brandFolder, expectedSize) {
                 await new Promise(r => setTimeout(r, 2000));
             }
 
-            ldMsg('Data download ho rahi hai...');
+            ldMsg('GAS se ZIP download ho rahi hai...');
             ldSub(fmtSize(expectedSize) + ' - please wait...');
             ldPct(10);
 
@@ -283,7 +286,7 @@ async function downloadViaGas(session, brandFolder, expectedSize) {
             ldPct(80);
             ldSub('Decoding...');
 
-            if (!data.data) throw new Error('Data nahi mila');
+            if (!data.data) throw new Error('GAS se data nahi mila');
 
             const b64    = data.data;
             const binary = atob(b64);
@@ -435,7 +438,7 @@ async function initDatabase() {
         window._dbInitRunning = false; return;
     }
 
-    ldSub('Database load ho rahi hai...');
+    ldSub(brandFolder + ' DB...');
 
     const cachedVer   = AppDB.get('dmDbVer_' + brandFolder, '0');
     const cachedBrand = await idbGet(DB_CFG.KEY_BRAND);
@@ -462,7 +465,7 @@ async function initDatabase() {
 
     // ── 4. GAS se latest info lo ──
     let gasInfo = null;
-    ldMsg('Update check ho raha hai...');
+    ldMsg('Server se version check...');
     try {
         gasInfo = await gasGetDbInfo(session, brandFolder);
     } catch (e) {
@@ -534,7 +537,7 @@ async function initDatabase() {
     if (isFirstInstall) {
         // No banner for first install — direct download
         ldMsg('Pehli baar DB download ho rahi hai...');
-        ldSub('v' + latestVer);
+        ldSub(brandFolder + ' v' + latestVer);
         ldPct(0);
         try {
             await downloadAndInstall(gasInfo, session, brandFolder, cachedVer);
