@@ -2,7 +2,7 @@
    LOGIN + GOOGLE SHEETS AUTH
    Script URL hardcoded - no config needed
 ═══════════════════════════════════════ */
-var GS_SCRIPT_URL  = 'https://script.google.com/macros/s/AKfycbwyQEWiUnPu_c3ZSuYPyTIxLi80E-LVuI-YUUYeppq6RqbNjV3KQwWpTxdoP1_ATu9q/exec';
+var GS_SCRIPT_URL  = 'https://script.google.com/macros/s/AKfycbwMgje5LBnyX-PVETfcJxfIUSsk8RM180PwD8MpUea8Xnm0aG5jUS2eJP3KMKVShAf3/exec';
 var GS_SESSION_KEY = 'dmSession';
 
 
