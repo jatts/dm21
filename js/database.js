@@ -254,9 +254,6 @@ async function gasCall(session, brandFolder, mode) {
     const resp = await fetch(url, { cache: 'no-store' });
     if (!resp.ok) throw new Error('GAS response: ' + resp.status);
     const data = await resp.json();
-    // TEMP DEBUG — issue trace ke baad hata dena
-    console.log('[DEBUG gasCall] mode=' + mode + ' url=' + url);
-    console.log('[DEBUG gasCall] response=', JSON.stringify(data).slice(0, 500));
     if (!data.success) throw new Error(data.message || 'GAS error');
     return data;
 }
