@@ -335,4 +335,3 @@ document.getElementById('signupBtn').addEventListener('click', function() {
 });
 
 // (logout handler below)
-
